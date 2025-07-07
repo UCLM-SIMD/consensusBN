@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <!--Project Information-->
+  <groupId>org.albacete.simd</groupId>
+  <artifactId>consensusBN</artifactId>
+  <version>1.0.0</version>
+  <packaging>jar</packaging>
+  <name>consensusBN</name>
+  <url>https://simd.i3a.uclm.es/</url>
+  <description>consensusBN is a Java-based library for Bayesian Network Fusion. This project allows users to combine
+    multiple Bayesian networks into a single consensus network, leveraging the power of consensus-based modeling
+    techniques. The project is supported by a published paper titled "Efficient and accurate structural
+    fusion of Bayesian networks."</description>
+  <licenses>
+    <license>
+      <name>MIT License</name>
+      <url>https://opensource.org/licenses/MIT</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  <developers>
+      <developer>
+      <id>zemagj</id>
+      <name>José Antonio Gámez</name>
+      <email>Jose.Gamez@uclm.es</email>
+      <organization>UCLM-SIMD</organization>
+      <organizationUrl>https://simd.i3a.uclm.es/</organizationUrl>
+    </developer>
+    <developer>
+      <id>jlaborda</id>
+      <name>Jorge Daniel Laborda</name>
+      <email>JorgeDaniel.Laborda@uclm.es</email>
+      <organization>UCLM-SIMD</organization>
+      <organizationUrl>https://simd.i3a.uclm.es/</organizationUrl>
+    </developer>
+  </developers>
+
+  <!--Project Requirements-->
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
+  </properties>
+
+  <!-- Define the SCM (Source Code Management) information -->
+  <scm>
+    <connection>scm:git:https://github.com/UCLM-SIMD/consensusBN.git</connection>
+    <developerConnection>scm:git:https://github.com/UCLM-SIMD/consensusBN.git</developerConnection>
+    <url>https://github.com/UCLM-SIMD/consensusBN</url>
+  </scm>
+
+  <dependencies>
+    <!-- Tetrad Library -->
+      <dependency>
+          <groupId>io.github.cmu-phil</groupId>
+          <artifactId>tetrad-lib</artifactId>
+          <!--<version>7.1.2-2</version>-->
+          <version>7.6.4</version>
+      </dependency>
+
+    <!--<dependency>
+      <groupId>io.github.cmu-phil</groupId>
+      <artifactId>data-reader</artifactId>
+      <version>7.1.2-2</version>
+    </dependency>
+    -->
+  </dependencies>
+
+  <build>
+      <plugins>
+        <!-- Configure the Maven Compiler Plugin -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.8.1</version> <!-- Use an appropriate version -->
+          <configuration>
+            <!-- Configure compiler options if needed -->
+          </configuration>
+        </plugin>
+
+        <!-- Configure the Maven JAR Plugin -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>3.2.2</version> <!-- Use an appropriate version -->
+          <configuration>
+            <!-- Configure JAR options if needed -->
+          </configuration>
+        </plugin>
+
+        <!-- Configure the Maven Source Plugin for source code packaging -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-source-plugin</artifactId>
+          <version>3.3.0</version>
+          <executions>
+            <execution>
+              <id>attach-sources</id>
+              <phase>verify</phase>
+              <goals>
+                <goal>jar-no-fork</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+
+        <!--JavaDoc plugin-->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <version>3.2.0</version>
+          <executions>
+            <execution>
+              <id>attach-javadocs</id>
+              <goals>
+                <goal>jar</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>2.22.2</version>
+        </plugin>
+
+      </plugins>
+  </build>
+
+  <!-- Define the distribution management (for deployment) -->
+  <distributionManagement>
+    <repository>
+      <id>sonatype-nexus-staging</id>
+      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+    </repository>
+  </distributionManagement>
+
+
+
+</project>
