@@ -3,152 +3,157 @@ package es.uclm.i3a.simd.consensusBN;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+
 import edu.cmu.tetrad.graph.Dag;
 import edu.cmu.tetrad.graph.Edge;
-import edu.cmu.tetrad.graph.Edges;
 import edu.cmu.tetrad.graph.Endpoint;
 import edu.cmu.tetrad.graph.Node;
 
+/**
+ * This class implements a heuristic to compute an ancestral order of nodes for a set of DAGs.
+ *  The heuristic is based on finding the best sink node in each iteration for the set of DAGs,
+ *  removing it from the DAGs, and repeating the process until all nodes are ordered.
+ */
 public class AlphaOrder {
-	ArrayList<Dag> setOfDags = null;
-	ArrayList<Node> alpha = null;
-	ArrayList<Dag> setOfauxG = null;
-//	ArrayList<int[][]> dpaths = null;
+	/**
+	 * The set of DAGs to compute the ancestral order from.
+	 */
+	private final ArrayList<Dag> setOfDags;
+	/**
+	 * The computed ancestral order of nodes.
+	 */
+	private ArrayList<Node> alpha;
+	/**
+	 * A set of auxiliary DAGs used during the computation.
+	 */
+	private final ArrayList<Dag> setOfauxG;
 	
+	/**
+	 * Constructor for the AlphaOrder class.
+	 * Initializes the set of DAGs and creates a copy of each DAG to work with.
+	 * @param dags the list of DAGs from which to compute the ancestral order.
+	 * This constructor creates a deep copy of each DAG to avoid modifying the original DAGs during
+	 * the computation of the ancestral order.
+	 */
 	public AlphaOrder(ArrayList<Dag> dags){
-		
+		// Check if the dags are valid
+		checkExceptions(dags);
+
+		// Initialize the class variables
 		this.setOfDags = dags;
-		this.alpha = new ArrayList<Node>();
-		this.setOfauxG = new ArrayList<Dag>();
-//		this.dpaths = new ArrayList<int[][]>();
-		
+		this.alpha = new ArrayList<>();
+		this.setOfauxG = new ArrayList<>();
 		for (Dag i : setOfDags)	{
 			Dag aux_G = new Dag(i);
 			setOfauxG.add(aux_G);
-//			dpaths.add(computeDirectedPathFromTo(aux_G));
+		}
+	}
+
+	/**
+	 * Checks for exceptions in the input set of DAGs.
+	 * Throws an IllegalArgumentException if the set is null, empty, or contains DAGs with different nodes.
+	 * Also checks that the size of the set is greater than 1.
+	 * @param setOfDags the set of DAGs to check for exceptions.
+	 */
+	private void checkExceptions(ArrayList<Dag> setOfDags) {
+		// Check if setOfDags is null
+		if(setOfDags == null) {
+			throw new IllegalArgumentException("The set of DAGs is null.");
+		}
+
+		// Check if all DAGs have the same nodes
+		if (setOfDags.isEmpty()) {
+			throw new IllegalArgumentException("The set of DAGs is empty.");
+		}
+		// Check that the size is greater than 1
+		if(setOfDags.size() <= 1) {
+			throw new IllegalArgumentException("The set of DAGs has only one DAG.");
 		}
 		
-	}
-	
-	public int[][] computeDirectedPathFromTo(Dag graph) {
-		LinkedList<Edge> dpathNewEdges = new LinkedList<Edge>();
-		dpathNewEdges.clear();
-		dpathNewEdges.addAll(graph.getEdges());
-		List<Node> dpathNodes = null;
-		dpathNodes = graph.getNodes();
-		
-		int numNodes = dpathNodes.size();
-		int [][] dpath = new int[numNodes][numNodes];
-		
-		while (!dpathNewEdges.isEmpty()) {
-			Edge edge = dpathNewEdges.removeFirst();
-			Node _nodeT = Edges.getDirectedEdgeTail(edge);
-			Node _nodeH = Edges.getDirectedEdgeHead(edge);
-			int _indexT = dpathNodes.indexOf(_nodeT);
-			int _indexH = dpathNodes.indexOf(_nodeH);
-			dpath[_indexT][_indexH] = 1;
-			int dPathT = 0;
-			int dPathH = 0;
-			int mindPath = 0;
-			for (int i = 0; i < dpathNodes.size(); i++) {
-				dPathT = dpath[i][_indexT];
-				if (dpath[i][_indexT] >= 1) {
-					dPathH = dpath[i][_indexH];
-					if(dPathH == 0) dpath[i][_indexH] = dPathT+1;
-					else{
-						mindPath = Math.min(dPathH, dPathT+1);
-						dpath[i][_indexH]=mindPath;
-					}
-				}
-				dPathH = dpath[_indexH][i];
-				if(dpath[_indexH][i] >= 1){
-					dPathT = dpath[_indexT][i];
-					if(dPathT ==0) dpath[_indexT][i] = dPathH+1;
-					else{
-						mindPath = Math.min(dPathT, dPathH+1);
-						dpath[_indexT][i] = mindPath;
-					}
-					
-				}
+		// Check that all DAGs have the same nodes
+		List<Node> firstDagNodes = setOfDags.get(0).getNodes();
+		for (Dag dag : setOfDags) {
+			if (!dag.getNodes().equals(firstDagNodes)) {
+				throw new IllegalArgumentException("All DAGs must have the same nodes. Dag " + dag + " has different nodes than the rest of DAGs.");
 			}
 		}
 		
-		return dpath;
-    }
+	}
+
 	
+	/**
+	 * Returns the nodes of the first DAG in the set, since all DAGs are assumed to have the same nodes.
+	 * @return
+	 */
 	public List<Node> getNodes(){
 		return(setOfDags.get(0).getNodes());
 	}
 	
-	// heursitica para orden de conceso basada en el numero de caminos dirigidos. (Es muy mala no se utiliza)
-	
-	public void computeAlphaH1(){
+	/**
+	 * This method computes the heuristic to find an ancestral order of nodes of consensus. It is based on the number of edges that would be added on a sequence created from the sink nodes upwards.
+	 * It iteratively finds the node with the minimum number of changes (inversions and additions of edges) and adds it to the beginning of the order.
+	 * */ 
+	public void computeAlpha(){
 		
+		// Get nodes and initialize the alpha list
 		List<Node> nodes = setOfDags.get(0).getNodes();
-		LinkedList<Node> alpha = new LinkedList<Node>();
+		LinkedList<Node> alpha_aux = new LinkedList<>();
 		
-		while(nodes.size()>0){
-			int index_alpha = computeNextH1(nodes);
-			Node node_alpha = nodes.get(index_alpha);
-			alpha.addFirst(node_alpha);
+		while(!nodes.isEmpty()){
+			int index_alpha = computeNextSink(nodes);
+			Node nodeAlpha = nodes.get(index_alpha);
+			alpha_aux.addFirst(nodeAlpha);
 			for(Dag g: this.setOfauxG){
-				removeNode(g,node_alpha);
-				//int[][] newDpaths = computeDirectedPathFromTo(g);  
-//				this.dpaths.set(this.setOfauxG.indexOf(g), newDpaths);
+				removeNode(g,nodeAlpha);
 			}
-			nodes.remove(node_alpha);
+			nodes.remove(nodeAlpha);
 		}
-		this.alpha = new ArrayList<Node>(alpha);
-	}
-	
-	// heuistica para encontrar un orden de conceso. Se basa en los enlaces que generaria seguir una secuencia creada desde los nodos sumideros hacia arriba.
-	
-public void computeAlphaH2(){
-		
-		List<Node> nodes = setOfDags.get(0).getNodes();
-		LinkedList<Node> alpha = new LinkedList<Node>();
-		
-		while(nodes.size()>0){
-			int index_alpha = computeNextH2(nodes);
-			Node node_alpha = nodes.get(index_alpha);
-			alpha.addFirst(node_alpha);
-			for(Dag g: this.setOfauxG){
-				removeNode(g,node_alpha);
-			}
-			nodes.remove(node_alpha);
-		}
-		this.alpha = new ArrayList<Node>(alpha);
+		this.alpha = new ArrayList<>(alpha_aux);
 	}
 	
 	
-	
-	int computeNextH2(List<Node> nodes){
+	/**
+	 * Gets the following node in the order based on the minimum number of changes (inversions and additions of edges) that would be required to create a sequence from the sink nodes upwards.
+	 * @param nodes Remaining nodes to be ordered.
+	 * @return index of the node that should be added next to the order.
+	 */
+	private int computeNextSink(List<Node> nodes){
 		
-		int changes = 0;
+		// Setting up variables to count changes
+		int changes;
 		int inversion = 0;
 		int addition = 0;
 		int indexNode = 0;
 		int min = Integer.MAX_VALUE;
-		
+
+		// Iterate through each node to find the one with the minimum changes for the list of DAGs.	
 		for(int i=0; i<nodes.size(); i++){
 			Node nodei = nodes.get(i);
 			for(Dag g: this.setOfauxG){
-				ArrayList<Edge> inserted = new ArrayList<Edge>();
+				// Checking total amount of inversions. We add -1 to give relevance to nodes that are already sinks.
 				List<Node> children = g.getChildren(nodei);
 				inversion += (children.size()-1);
+
+				// Checking edge additions from parents of each child to nodei and from parents of nodei to children.
+				ArrayList<Edge> inserted = new ArrayList<>();
 				List<Node> paX = g.getParents(nodei);
 				for(Node child: children){
 					List<Node> paY = g.getParents(child);
+					// For each parent of nodei, check if it has an edge to the child
 					for(Node nodep: paX){
-							if(g.getEdge(nodep, child)==null){
-								addition++;
-							}
+						if(g.getEdge(nodep, child)==null){
+							addition++;
+						}
 					}
+					// For each parent of the child, check if it has an edge to nodei
 					for(Node nodec: paY){
 						if(!nodec.equals(nodei)){
+							// If there is no edge between nodec and nodei, we consider adding it
 							if((g.getEdge(nodec,nodei)==null) && (g.getEdge(nodei,nodec)==null)){
 								Edge toBeInserted = new Edge(nodec,nodei,Endpoint.CIRCLE,Endpoint.CIRCLE);
 								boolean contains = false;
+								// Checking if we have already added this edge to the list of inserted edges
+								// to avoid counting it multiple times.
 								for(Edge e: inserted){
 									if((e.getNode1().equals(nodec) && (e.getNode2().equals(nodei))) || 
 									  ((e.getNode1().equals(nodei) && (e.getNode2().equals(nodec))))){
@@ -156,6 +161,7 @@ public void computeAlphaH2(){
 										break;
 									}
 								}
+								// Checkin if there is a new edge addition, we update the counter and the list of inserted edges if so.
 								if(!contains){
 									addition++;
 									inserted.add(toBeInserted);
@@ -165,117 +171,110 @@ public void computeAlphaH2(){
 					}
 				}
 			}
+			// Calculate total changes for the current node
 			changes = inversion + addition;
+			// If the current node has less changes than the minimum found so far, we update the minimum and the index of the node
+			// to be added to the order.
 			if(changes < min){
 				min = changes;
 				indexNode = i;
 			}
-			changes = 0;
+			// Resetting changes for the next iteration
 			inversion = 0;
 			addition = 0;
 		}
 		return indexNode;
 	}
 	
-	void removeNode(Dag g, Node node_alpha){
+	/**
+	 * Removes a node from the DAG and updates the edges according to a new node added to the alpha order.
+	 * It removes a sink node and updates the edges to maintain the directed paths in the DAG.
+	 * This is done each iteration of the heuristic to compute the alpha order.
+	 * @param g the DAG from which the node is to be removed.
+	 * @param nodeAlpha the node to be removed from the DAG.
+	 */
+	private void removeNode(Dag g, Node nodeAlpha){
 		
-		List<Node> children = g.getChildren(node_alpha);
+		List<Node> children = g.getChildren(nodeAlpha);
 		
 		while(!children.isEmpty()){
-			int i=0;
-			Node child;
-			boolean seguir = false;
-			do{
-				child = children.get(i++);
-				g.removeEdge(node_alpha, child);
-				seguir=false;
-				if(g.paths().existsDirectedPath(node_alpha,child)){
-					seguir=true;
-					g.addEdge(new Edge(node_alpha,child,Endpoint.TAIL, Endpoint.ARROW));
-				}
-			}while(seguir);
+			// 1. Select a child that prevents  a cycle when nodeAlpha <- child is added.
+			Node child = selectChild(g, nodeAlpha, children);
 
-			List<Node> paX = g.getParents(node_alpha);
-			List<Node> paY = g.getParents(child);
-			paY.remove(node_alpha);
-			g.addEdge(new Edge(child,node_alpha,Endpoint.TAIL, Endpoint.ARROW));
-			for(Node nodep: paX){
-				Edge pay = g.getEdge(nodep, child);
-				if(pay == null)
-					g.addEdge(new Edge(nodep,child,Endpoint.TAIL,Endpoint.ARROW));
+			// 2. Cover the edge nodeAlpha -> child by adding edges from parents of nodeAlpha to child and from parents of child to nodeAlpha. Last of all we revert the edge nodeAlpha -> child.
+			// This is done to maintain the directed paths in the DAG.
+			coverEdge(g, nodeAlpha, child);
 
-			}
-			for(Node nodep : paY){
-				Edge paz = g.getEdge(nodep,node_alpha);
-				if(paz == null) 
-					g.addEdge(new Edge(nodep,node_alpha,Endpoint.TAIL,Endpoint.ARROW));
-			}
-
+			// 3. Delete the child from the list of children of nodeAlpha, as it has been processed.
 			children.remove(child);
 		}
-		g.removeNode(node_alpha);
+		// Finally, remove the nodeAlpha from the DAG.
+		g.removeNode(nodeAlpha);
 	}
 
-
-	int computeNextH1(List<Node> nodes){
-		
-		int min = Integer.MAX_VALUE;
-		int minIndex = 0;
-		
-		for(int i=0 ; i< nodes.size(); i++){
-			int weightNodei = 0;
-			//for(Dag dag : this.setOfauxG){
-	//			int[][] dpath = this.dpaths.get(this.setOfauxG.indexOf(dag));
-	//			for(int j=0 ; j<nodes.size(); j++) weightNodei+= dpath[i][j];
-			//}
-			if(weightNodei < min){
-				min = weightNodei;
-				minIndex = i;
+	/**
+	 * Selects a child node from the list of children of nodeAlpha that does not create a cycle when an edge from nodeAlpha to the child is added (nodeAlpha <- child).
+	 * @param g the DAG from which the child is to be selected.
+	 * @param nodeAlpha the node from the alpha order heuristic.
+	 * @param children the remaining children of nodeAlpha in the DAG.
+	 * @return the selected child node that does not create a cycle when an edge from nodeAlpha to the child is added.
+	 */
+	private Node selectChild(Dag g, Node nodeAlpha, List<Node> children) {
+		int i=0;
+		Node child;
+		boolean endCondition;
+		do{
+			child = children.get(i++);
+			g.removeEdge(nodeAlpha, child);
+			endCondition=false;
+			if(g.paths().existsDirectedPath(nodeAlpha,child)){
+				endCondition=true;
+				g.addEdge(new Edge(nodeAlpha,child,Endpoint.TAIL, Endpoint.ARROW));
 			}
-			
+		}while(endCondition);
+		return child;
+	}
+
+	/**
+	 * Covers the edge from nodeAlpha to child by adding edges from parents of nodeAlpha to child and from parents of child to nodeAlpha.
+	 * This is done to maintain the directed paths in the DAG after removing nodeAlpha.
+	 * @param g the DAG where the edge is to be covered.
+	 * @param nodeAlpha the node from the alpha order heuristic.
+	 * @param child the child node selected from the list of children of nodeAlpha.
+	 */
+	private void coverEdge(Dag g, Node nodeAlpha, Node child) {
+		// Getting the parents of nodeAlpha and child.
+		List<Node> paX = g.getParents(nodeAlpha);
+		List<Node> paY = g.getParents(child);
+		paY.remove(nodeAlpha);
+		
+		// Adding edges from parents of nodeAlpha to child and from parents of child to nodeAlpha.
+		for(Node nodep: paX){
+			Edge pay = g.getEdge(nodep, child);
+			if(pay == null)
+				g.addEdge(new Edge(nodep,child,Endpoint.TAIL,Endpoint.ARROW));
+
 		}
 		
-		return minIndex;
+		// Adding edges from parents of child to nodeAlpha.
+		for(Node nodep : paY){
+			Edge paz = g.getEdge(nodep,nodeAlpha);
+			if(paz == null) 
+				g.addEdge(new Edge(nodep,nodeAlpha,Endpoint.TAIL,Endpoint.ARROW));
+		}
+
+		// Reverting the edge nodeAlpha -> child.
+		g.addEdge(new Edge(child,nodeAlpha,Endpoint.TAIL, Endpoint.ARROW));
 		
 	}
+
+
 	
-	public ArrayList<Node> getOrder(){
-		
+	/**
+	 * Returns the computed ancestral order of nodes.
+	 * @return an ArrayList of nodes representing the ancestral order of the DAGs after applying the alpha order heuristic.
+	 */
+	public ArrayList<Node> getOrder(){	
 		return this.alpha;
 	}
-	
-	
-	public static void main(String args[]) {
-		
-//		ArrayList<Dag> dags = new ArrayList<Dag>();
-//		ArrayList<Node> alfa = new ArrayList<Node>();
-//
-//
-//		System.out.println("Grafos de Partida:   ");
-//		System.out.println("---------------------");
-////		Graph graph = GraphConverter.convert("X1-->X5,X2-->X3,X3-->X4,X4-->X1,X4-->X5");
-////		Dag dag = new Dag(graph);
-//
-//		Dag dag = new Dag();
-//	//	dag = GraphUtils.randomDag(Integer.parseInt(args[0]), Integer.parseInt(args[1]), true);
-//		dags.add(dag);
-//		System.out.println("DAG: ---------------");
-//		System.out.println(dag.toString());
-//		for (int i=0 ; i < Integer.parseInt(args[2])-1 ; i++){
-//		//	Dag newDag = GraphUtils.randomDag(dag.getNodes(),Integer.parseInt(args[1]) ,true);
-//			dags.add(newDag);
-//			System.out.println("DAG: ---------------");
-//			System.out.println(newDag.toString());
-//		}
-//
-//		AlphaOrder order = new AlphaOrder(dags);
-//		order.computeAlphaH2();
-//		alfa = order.getOrder();
-//
-//		System.out.println("Orden de Consenso: " + alfa.toString());
-		
-		
-	}
-	
-	
 }
