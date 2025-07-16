@@ -39,91 +39,75 @@ public class BackwardEquivalenceSearchDSep {
     }
 
     public Dag applyBackwardEliminationWithDSeparation(){
-        // Implement the BESd algorithm logic here
-        // This is a placeholder for the actual BESd algorithm implementation
-        // The algorithm should modify the graph based on the BESd logic
-        rebuildPattern(graph);
-		Node x, y;
-		Set<Node> t = new HashSet<>();
-        double score = 0;
-        double bestScore = score;
+		double score = 0;
+        EdgeCandidate bestCandidate;
+        
+		// Creating a pdag from the graph
+		rebuildPattern(graph);
+
+		// While there are edges to delete, search for the best edge to delete
 		do {
-			x = y = null;
-			Set<Edge> edges1 = graph.getEdges();
-			List<Edge> edges = new ArrayList<>();
+			// Make sure that any undirected edge is transformed into two directed edges
+			List<Edge> edges = cleanUndirectedEdges();
 
-			for (Edge edge : edges1) {
-				Node _x = edge.getNode1();
-				Node _y = edge.getNode2();
+			// Find the best edge to delete
+			bestCandidate = calculateBestCandidateEdge(edges, score);
+			/* for (Edge edge : edges) {
+				// Getting candidate edge to delete			
+				Node candidateTail = Edges.getDirectedEdgeTail(edge);
+				Node candidateHead = Edges.getDirectedEdgeHead(edge);
 
-				if (Edges.isUndirectedEdge(edge)) {
-					edges.add(Edges.directedEdge(_x, _y));
-					edges.add(Edges.directedEdge(_y, _x));
-				} else {
-					edges.add(edge);
-				}
-			}
-			for (Edge edge : edges) {
-				
-				Node _x = Edges.getDirectedEdgeTail(edge);
-				Node _y = Edges.getDirectedEdgeHead(edge);
-
-				List<Node> hNeighbors = getHNeighbors(_x, _y, graph);
-//		                List<Set<Node>> hSubsets = powerSet(hNeighbors);
-				PowerSet hSubsets= PowerSetFabric.getPowerSet(_x,_y,hNeighbors);
+				List<Node> hNeighbors = getHNeighbors(candidateTail, candidateHead, graph);
+				PowerSet hSubsets= PowerSetFabric.getPowerSet(candidateTail,candidateHead,hNeighbors);
 
 				while(hSubsets.hasMoreElements()) {
 					SubSet hSubset=hSubsets.nextElement();
-					double deleteEval = deleteEval(_x, _y, hSubset, graph);
+
+					// Checking if {naYXH} \ {hSubset} is a clique
+					List<Node> naYXH = findNaYX(candidateTail, candidateHead, graph);
+					naYXH.removeAll(hSubset);
+					if (!isClique(naYXH, graph)) {
+		                   continue;
+					}
+
+					// Calculating the score of the candidate edge deletion
+					double deleteEval = deleteEval(candidateTail, candidateHead, hSubset, graph);
+					
+					// Setting limit for deleteEval
 					if (!(deleteEval >= 1.0)) deleteEval = 0.0;
+
+					// If the score is not better than the best score, continue
 					double evalScore = score + deleteEval;
-
-                    //System.out.println("Attempt removing " + _x + "-->" + _y + "(" +evalScore + ") "+ hSubset.toString());
-
 					if (!(evalScore > bestScore)) {
 						continue;
 					}
 
-					// INICIO TEST 1
-					List<Node> naYXH = findNaYX(_x, _y, graph);
-					naYXH.removeAll(hSubset);
-					if (!isClique(naYXH, graph)) {
-//		                    	hSubsets.firstTest(true); // Si pasa para H entonces pasa para cualquier H' | H' contiene H
-						continue;
-					}
-					// FIN TEST 1
-
+					// Updating variables for the best edge deletion
 					bestScore = evalScore;
-					x = _x;
-					y = _y;
-					t = hSubset;
+					bestTail = candidateTail;
+					bestHead = candidateHead;
+					bestSetParents = hSubset;
 				}
 
+			} */
+			// 
+			if (bestCandidate != null) {
+				score = executeEdgeDeletion(bestCandidate);
 			}
-			if (x != null) {
-				System.out.println(" ");
-				System.out.println("DELETE " + graph.getEdge(x, y) + t.toString() + " (" +bestScore + ")");
-				System.out.println(" ");
-				delete(x, y, t, graph);
-				rebuildPattern(graph);
-				int deletedEdges = 0;
-				for(int g = 0; g <this.transformedDags.size(); g++){
-					if(this.transformedDags.get(g).getEdge(x, y) != null || this.transformedDags.get(g).getEdge(y, x) != null) deletedEdges++;
-				}
-				this.numberOfInsertedEdges-= deletedEdges;
-//				if(graph.existsDirectedCycle()){
+		} while (bestCandidate != null);
 
-//					System.out.println("Hay un ciclo: "+x.toString()+"  "+y.toString());
-//					System.out.println("Grafo: "+graph.toString());
-//					System.exit(0);
-//				}
-				score = bestScore;
-			}
-		} while (x != null);
-		
-//		System.out.println("Pdag: "+ graph.toString());
-                pdagToDag(graph);
-//		System.out.println("PdagToDag"+graph.toString());
+		// Rebuild the pattern to ensure the final graph is a DAG		
+		createOutputDag();
+
+
+        return outputDag;
+    }
+
+	private void createOutputDag() {
+		// Rebuild the pattern to ensure the final graph is a DAG
+		pdagToDag(graph);
+
+		// Rebuild the output DAG from the final graph
 		this.outputDag = new Dag();
 		for (Node node : graph.getNodes()) this.outputDag.addNode(node);
 		Node nodeT, nodeH;
@@ -139,19 +123,111 @@ public class BackwardEquivalenceSearchDSep {
 			}
 			if(!this.outputDag.paths().existsDirectedPath(nodeT, nodeH)) this.outputDag.addEdge(e);
 		}
-//		System.out.println("DAG: "+this.outputDag.toString());
-	
+	}
 
-
-
-
-        return outputDag;
-    }
 
     private void rebuildPattern(Graph graph) {
         GraphSearchUtils.basicCpdag(graph);
         pdag(graph);
     }
+
+	
+	private List<Edge> cleanUndirectedEdges() {
+		Set<Edge> edges1 = graph.getEdges();
+		List<Edge> edges = new ArrayList<>();
+
+		for (Edge edge : edges1) {
+			Node _x = edge.getNode1();
+			Node _y = edge.getNode2();
+
+			if (Edges.isUndirectedEdge(edge)) {
+				edges.add(Edges.directedEdge(_x, _y));
+				edges.add(Edges.directedEdge(_y, _x));
+			} else {
+				edges.add(edge);
+			}
+		}
+		return edges;
+	}
+
+	private EdgeCandidate calculateBestCandidateEdge(List<Edge> edges, double score){
+		double bestScore = score;
+		EdgeCandidate bestCandidate = null;
+		for(Edge edge : edges){
+			// Getting candidate edge to delete			
+			Node candidateTail = Edges.getDirectedEdgeTail(edge);
+			Node candidateHead = Edges.getDirectedEdgeHead(edge);
+
+			List<Node> hNeighbors = getHNeighbors(candidateTail, candidateHead, graph);
+			PowerSet hSubsets= PowerSetFabric.getPowerSet(candidateTail,candidateHead,hNeighbors);
+
+			while(hSubsets.hasMoreElements()) {
+				// Getting a subset of hNeighbors
+				SubSet hSubset=hSubsets.nextElement();
+				
+				// Checking if {naYXH} \ {hSubset} is a clique
+				List<Node> naYXH = findNaYX(candidateTail, candidateHead, graph);
+				naYXH.removeAll(hSubset);
+				if (!isClique(naYXH, graph)) {
+					continue;
+				}
+
+				// Calculating the score of the candidate edge deletion
+				double deleteEval = deleteEval(candidateTail, candidateHead, hSubset, graph);
+				
+				// Setting limit for deleteEval
+				if (!(deleteEval >= 1.0)) deleteEval = 0.0;
+
+				// If the score is not better than the best score, continue
+				double evalScore = score + deleteEval;
+				if (!(evalScore > bestScore)) {
+					continue;
+				}
+
+				// Updating best candidate edge
+				bestCandidate = new EdgeCandidate(candidateTail, candidateHead, hSubset);
+				bestCandidate.score = evalScore;
+
+				// Updating score for the best edge deletion
+				bestScore = evalScore;
+			}
+		}
+		return bestCandidate;
+	}
+
+	private double executeEdgeDeletion(EdgeCandidate bestCandidate) {
+		Node bestTail;
+		Node bestHead;
+		Set<Node> bestSetParents;
+		double score;
+		double bestScore;
+		bestTail = bestCandidate.tail;
+		bestHead = bestCandidate.head;
+		bestSetParents = bestCandidate.conditioningSet;
+		bestScore = bestCandidate.score;
+
+		// Applying delete
+		System.out.println(" ");
+		System.out.println("DELETE " + graph.getEdge(bestTail, bestHead) + bestSetParents.toString() + " (" +bestScore + ")");
+		System.out.println(" ");
+		delete(bestTail, bestHead, bestSetParents, graph);
+		
+		// Rebuilding the pattern after deleting the edge
+		rebuildPattern(graph);
+		
+		// Updating the number of inserted edges
+		int deletedEdges = 0;
+		for(int g = 0; g <this.transformedDags.size(); g++){
+			if(this.transformedDags.get(g).getEdge(bestTail, bestHead) != null || this.transformedDags.get(g).getEdge(bestHead, bestTail) != null) deletedEdges++;
+		}
+		this.numberOfInsertedEdges-= deletedEdges;
+
+		// Updating the initial score of the iteration
+		score = bestScore;
+		return score;
+	}
+
+
 
     /**
      * Fully direct a graph with background knowledge. I am not sure how to
@@ -357,6 +433,18 @@ public class BackwardEquivalenceSearchDSep {
 		return this.numberOfInsertedEdges;
 	}
 
+	private class EdgeCandidate {
+		public final Node tail;
+		public final Node head;
+		public final Set<Node> conditioningSet;
+		public double score;
 
+		public EdgeCandidate(Node tail, Node head, Set<Node> conditioningSet) {
+			this.tail = tail;
+			this.head = head;
+			this.conditioningSet = conditioningSet;
+		}
     
+	}
+
 }
