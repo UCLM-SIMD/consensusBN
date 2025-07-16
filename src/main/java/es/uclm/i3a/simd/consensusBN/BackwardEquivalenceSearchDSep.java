@@ -329,6 +329,7 @@ public class BackwardEquivalenceSearchDSep {
 			close.put(a.toString(),a);
 			List<Node> pa =aux.getAdjacentNodes(a);
 			for(Node p : pa){
+				if(p == null) continue;
 				if(close.get(p.toString()) == null){
 					if(!open.contains(p)) open.addLast(p);
 				}
@@ -338,28 +339,23 @@ public class BackwardEquivalenceSearchDSep {
 		return true;
 	}
        
-	    
-    public Dag getFusion(){
-    	
-    	return this.outputDag;
-    }
-    
-    public List<Node> getOrderFusion(){
-    	return  this.getFusion().paths().getValidOrder(this.getFusion().getNodes(),true);
-    }
     
     	
-	   private static boolean isClique(List<Node> set, Graph graph) {
-	        List<Node> setv = new LinkedList<Node>(set);
-	        for (int i = 0; i < setv.size() - 1; i++) {
-	            for (int j = i + 1; j < setv.size(); j++) {
-	                if (!graph.isAdjacentTo(setv.get(i), setv.get(j))) {
-	                    return false;
-	                }
-	            }
-	        }
-	        return true;
-	    }
+	private static boolean isClique(List<Node> set, Graph graph) {
+		List<Node> setv = new LinkedList<Node>(set);
+		for (int i = 0; i < setv.size() - 1; i++) {
+			for (int j = i + 1; j < setv.size(); j++) {
+				if (!graph.isAdjacentTo(setv.get(i), setv.get(j))) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	public int getNumberOfInsertedEdges() {
+		return this.numberOfInsertedEdges;
+	}
 
 
     

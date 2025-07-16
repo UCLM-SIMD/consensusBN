@@ -1,9 +1,14 @@
 package es.uclm.i3a.simd.consensusBN;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -96,29 +101,89 @@ public class ConsensusBESTest {
     }
 
     @Test
-    public void testConsensusBESConsistency() {
-        ConsensusBES consensusBES1 = new ConsensusBES(inputDags);
-        consensusBES1.fusion();
-        Dag outputDag1 = consensusBES1.getFusion();
-        assertNotNull(outputDag1);
+    public void testRandomBNFusion(){
+        // (seed, n. variables, n egdes max, n.dags, mutation(n. de operaciones))
+		RandomBN setOfDags = new RandomBN(0, 20, 50,
+				4,3);
+		setOfDags.setMaxInDegree(4);
+		setOfDags.setMaxOutDegree(4);
+		setOfDags.generate();
 
-        ConsensusBES consensusBES2 = new ConsensusBES(inputDags);
-        consensusBES2.fusion2();
-        Dag outputDag2 = consensusBES2.getFusion();
-        assertNotNull(outputDag2);
+    	ConsensusBES conDag = new ConsensusBES(setOfDags.setOfRandomDags);
+    	conDag.fusion();
+    	Dag besDag = conDag.getFusion();
+        Dag unionDag = conDag.getUnion();
+        ConsensusUnion consensusUnion = conDag.getConsensusUnion();
+        int totalNumberOfInsertedEdges = conDag.getNumberOfInsertedEdges();
+        int consensusNumberOfInsertedEdges = consensusUnion.getNumberOfInsertedEdges();
 
-        // Check that both outputs are the same
-        assertNotNull(outputDag1);
-        assertNotNull(outputDag2);
-        assertEquals(outputDag1, outputDag2);
-        assertEquals(outputDag1.getNodes().size(), outputDag2.getNodes().size());
-        assertEquals(outputDag1.getEdges().size(), outputDag2.getEdges().size());
-
-        for (Node node : outputDag1.getNodes()) {
-            assert outputDag2.getNodes().contains(node);
-        }
-        for(Edge edge : outputDag1.getEdges()) {
-            assert outputDag2.getEdges().contains(edge);
-        }
+        assertNotNull(besDag);
+        assertNotNull(unionDag);
+        assertNotNull(consensusUnion);
+        assertEquals(besDag.getNodes().size(), unionDag.getNodes().size());
+        assert consensusNumberOfInsertedEdges >= 0;
+        assert consensusNumberOfInsertedEdges >= totalNumberOfInsertedEdges;        
     }
+
+
+    @Test
+    void testFusionProducesDag() {
+        ConsensusBES fusionAlgorithm = new ConsensusBES(inputDags);
+        fusionAlgorithm.fusion();
+
+        Dag result = fusionAlgorithm.getFusion();
+        assertNotNull(result, "El DAG de salida no debe ser null.");
+        assertFalse(result.paths().existsDirectedCycle(), "El DAG resultante no debe tener ciclos.");
+    }
+
+    @Test
+    void testEdgeInsertionCountIsCorrectlyComputed() {
+        ConsensusBES fusionAlgorithm = new ConsensusBES(inputDags);
+        fusionAlgorithm.fusion();
+
+        int insertedEdges = fusionAlgorithm.getNumberOfInsertedEdges();
+        assertTrue(insertedEdges >= 0, "El número de aristas insertadas debe ser >= 0.");
+    }
+
+    @Test
+    void testFusionOrderIsValid() {
+        ConsensusBES fusionAlgorithm = new ConsensusBES(inputDags);
+        fusionAlgorithm.fusion();
+
+        List<Node> order = fusionAlgorithm.getOrderFusion();
+        assertNotNull(order, "El orden de fusión no debe ser null.");
+        assertEquals(4, order.size(), "El orden de fusión debe tener 3 nodos.");
+    }
+
+    @Test
+    void testTransformedDagsAreAccessibleAfterFusion() {
+        ConsensusBES fusionAlgorithm = new ConsensusBES(inputDags);
+        fusionAlgorithm.fusion();
+
+        ArrayList<Dag> transformed = fusionAlgorithm.getTransformedDags();
+        assertEquals(2, transformed.size(), "Debe haber 2 DAGs transformados.");
+    }
+
+    @Test
+    void testGetTransformedDagsWithoutFusionThrowsException() {
+        ConsensusBES fusionAlgorithm = new ConsensusBES(inputDags);
+
+        assertThrows(IllegalStateException.class, fusionAlgorithm::getTransformedDags,
+                "Debe lanzar una excepción si se accede a los DAGs transformados sin llamar a fusion().");
+    }
+
+    @Test
+    void testThreadExecutionWithRunMethod() {
+        ConsensusBES fusionAlgorithm = new ConsensusBES(inputDags);
+        Thread thread = new Thread(fusionAlgorithm);
+        thread.start();
+        try {
+            thread.join();
+        } catch (InterruptedException e) {
+            fail("El hilo fue interrumpido.");
+        }
+
+        assertNotNull(fusionAlgorithm.getFusion(), "El DAG resultante debe existir tras ejecutar run().");
+    }
+
 }

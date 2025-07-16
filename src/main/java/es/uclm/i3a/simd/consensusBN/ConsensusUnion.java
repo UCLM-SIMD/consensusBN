@@ -162,6 +162,14 @@ public class ConsensusUnion implements Runnable{
 	public void run() {
 		this.union = this.union();
 	}
+
+	public ArrayList<Dag> getTransformedDags() {
+		if (this.imaps2alpha != null) {
+			return this.imaps2alpha.getSetOfOutputDags();
+		} else {
+			throw new IllegalStateException("TransformDags has not been initialized. Please call union() first.");
+		}
+	}
 		
 		
 		
