@@ -18,7 +18,6 @@ import edu.cmu.tetrad.graph.Node;
 import edu.cmu.tetrad.search.utils.MeekRules;
 import edu.cmu.tetrad.search.utils.GraphSearchUtils;
 import static es.uclm.i3a.simd.consensusBN.Utils.pdagToDag;
-//import experimentosFusion.RandomBN;
 
 
 
@@ -26,27 +25,32 @@ public class ConsensusBES implements Runnable {
 	
 	ArrayList<Node> alpha = null;
 	Dag outputDag = null;
-	AlphaOrder heuristic = null;
-	TransformDags imaps2alpha = null;
+	//AlphaOrder heuristic = null;
+	//TransformDags imaps2alpha = null;
+	ConsensusUnion consensusUnion;
 	ArrayList<Dag> setOfdags = null;
 	ArrayList<Dag> setOfOutDags = null;
 	Dag union = null;
 	int numberOfInsertedEdges = 0;
 	
-	Map<String, Double> localScore = new HashMap<String,Double>();
+	Map<String, Double> localScore = new HashMap<>();
 	
 	
 	public ConsensusBES(ArrayList<Dag> dags){
 		this.setOfdags = dags;
+		this.consensusUnion = new ConsensusUnion(this.setOfdags);
+		
+		/*
 		this.heuristic = new AlphaOrder(this.setOfdags);
 		
-		this.heuristic.computeAlphaH2();
-		this.alpha = this.heuristic.alpha;
+		this.heuristic.computeAlpha();
+		this.alpha = this.heuristic.getOrder();
 		this.imaps2alpha = new TransformDags(this.setOfdags,this.alpha);
 	
 		this.imaps2alpha.transform();
 		this.numberOfInsertedEdges = imaps2alpha.getNumberOfInsertedEdges();
-		this.setOfOutDags = imaps2alpha.setOfOutputDags;
+		this.setOfOutDags = imaps2alpha.getSetOfOutputDags();
+		*/
 	}
 	
 	
@@ -54,11 +58,14 @@ public class ConsensusBES implements Runnable {
 		return this.numberOfInsertedEdges;
 	}
 	
-	private void consensusUnion(){
-		
+	public void consensusUnion(){
+		this.union = this.consensusUnion.union();
+		this.setOfOutDags = this.consensusUnion.getTransformedDags();
+
+		/*
 		this.union = new Dag(this.alpha);
 		for(Node nodei: this.alpha){
-			for(Dag d : this.imaps2alpha.setOfOutputDags){
+			for(Dag d : this.imaps2alpha.getSetOfOutputDags()){
 				List<Node>parent = d.getParents(nodei);
 				for(Node pa: parent){
 					if(!this.union.isParentOf(pa, nodei)){
@@ -68,6 +75,7 @@ public class ConsensusBES implements Runnable {
 			}
 			
 		}
+		*/
 //		for(Edge e: this.union.getEdges()){
 //			for(Dag d : this.imaps2alpha.setOfOutputDags){
 //				if((d.getEdge(e.getNode1(), e.getNode2())==null) && (d.getEdge(e.getNode2(), e.getNode1())==null)) 
@@ -77,8 +85,19 @@ public class ConsensusBES implements Runnable {
 //		}
 		
 	}
+
+	public Dag getUnion() {
+		return this.union;
+	}
 	
 	// private methods for searching
+	public void fusion2(){
+		// 1. Apply ConsensusUnion to the set of dags
+		consensusUnion();
+		// 2. Apply Backward Equivalence Search with D-separation
+		BackwardEquivalenceSearchDSep bes = new BackwardEquivalenceSearchDSep(this.union, this.setOfdags, this.setOfOutDags);
+		this.outputDag = bes.applyBackwardEliminationWithDSeparation();
+	}
 	
 
 	public void fusion(){
@@ -99,7 +118,7 @@ public class ConsensusBES implements Runnable {
 		//SearchGraphUtils.dagToPdag(graph);
 		rebuildPattern(graph);
 		Node x, y;
-		Set<Node> t = new HashSet<Node>();
+		Set<Node> t = new HashSet<>();
 		do {
 			x = y = null;
 			Set<Edge> edges1 = graph.getEdges();
