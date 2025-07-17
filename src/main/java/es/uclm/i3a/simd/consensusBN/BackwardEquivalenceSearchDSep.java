@@ -1,6 +1,8 @@
 package es.uclm.i3a.simd.consensusBN;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -19,16 +21,76 @@ import edu.cmu.tetrad.search.utils.GraphSearchUtils;
 import edu.cmu.tetrad.search.utils.MeekRules;
 import static es.uclm.i3a.simd.consensusBN.Utils.pdagToDag;
 
+/**
+ * This class implements the Backward Equivalence Search with D-Separation
+ * algorithm for consensus Bayesian networks. It uses an implementation of
+ * second phase of the Greedy Equivalence Search (GES) algorithm, the Backward
+ * Equivalence Search (BES), to refine a consensus DAG by removing edges while
+ * ensuring that the resulting graph remains a Directed Acyclic Graph (DAG).
+ * Since no data is available, the algorithm relies on D-separation to
+ * determine whether two nodes are conditionally independent given a set of
+ * other nodes. For this, the algorithm uses the set of input DAGs to check
+ * whether the deletion of an edge maintains the d-separation condition.
+ */
 public class BackwardEquivalenceSearchDSep {
-
+	/**
+	 * The graph representing the consensus DAG after applying the Backward
+	 * Equivalence Search with D-separation.
+	 * This graph is built from the union of the transformed input DAGs and is
+	 * refined by removing edges based on d-separation checks.
+	 * 
+	 * @see ConsensusUnion
+	 * @see TransformDags
+	 */
     private final Graph graph;
+
+	/**
+	 * List of initial DAGs used to check how many edges are deleted.
+	 */
     private final ArrayList<Dag> transformedDags;
+
+	/**
+	 * List of initial DAGs used to check the d-separation condition.
+	 * This list is used to verify whether the deletion of an edge maintains the
+	 * d-separation condition across all input DAGs.
+	 * 
+	 * @see Utils#dSeparated(Dag, Node, Node, List)
+	*/
     private final ArrayList<Dag> initialDags;
+
+	/**
+	 * The output DAG after applying the Backward Equivalence Search with D-separation.
+	 * This DAG is the final result after removing edges from the consensus DAG
+	 * while ensuring that the d-separation condition is maintained using the input DAGs.
+	 * 
+	 * @see Utils#dSeparated(Dag, Node, Node, List)
+	 */
     private Dag outputDag;
+
+	/**
+	 * A map to store the local scores for edge deletions.
+	 * This map is used to cache the scores of edge deletions to avoid redundant calculations.
+	 * The key is a string representation of the edge and its conditioning set, and the value is the score.
+	 */
     private final Map<String, Double> localScore = new HashMap<>();
+
+	/**
+	 * Number of edges inserted during the consensus union and backward equivalence search process.
+	 * This variable keeps track of the total number of edges that were added to the consensus DAG
+	 * during the union of transformed input DAGs and the subsequent edge deletions.
+	 * 
+	 * @see ConsensusUnion#getNumberOfInsertedEdges()
+	 * @see BackwardEquivalenceSearchDSep#applyBackwardEliminationWithDSeparation()
+	 */
     private int numberOfInsertedEdges = 0;
 
-
+	/**
+	 * Constructor for BackwardEquivalenceSearchDSep that initializes the properties for the search with a union DAG and lists of initial and transformed DAGs.
+	 * 
+	 * @param union The resulting union DAG from the ConsensusUnion process.
+	 * @param initialDags List of initial DAGs used to check the d-separation condition.
+	 * @param transformedDags List of transformed DAGs after applying the alpha order.
+	 */
     public BackwardEquivalenceSearchDSep(Dag union, ArrayList<Dag>initialDags, ArrayList<Dag> transformedDags) {
         this.graph = new EdgeListGraph(new LinkedList<>(union.getNodes()));
         for (Edge edge : union.getEdges()) {
@@ -38,6 +100,12 @@ public class BackwardEquivalenceSearchDSep {
         this.transformedDags = transformedDags;
     }
 
+	/**
+	 * Applies the Backward Equivalence Search with D-separation to the consensus DAG.
+	 * This method iteratively removes edges from the consensus DAG while ensuring that the d-separation condition is maintained across all input DAGs.
+	 * It returns the final output DAG after all possible edge deletions.
+	 * @return The output DAG after applying the Backward Equivalence Search with D-separation.
+	 */
     public Dag applyBackwardEliminationWithDSeparation(){
 		double score = 0;
         EdgeCandidate bestCandidate;
@@ -103,35 +171,24 @@ public class BackwardEquivalenceSearchDSep {
         return outputDag;
     }
 
-	private void createOutputDag() {
-		// Rebuild the pattern to ensure the final graph is a DAG
-		pdagToDag(graph);
-
-		// Rebuild the output DAG from the final graph
-		this.outputDag = new Dag();
-		for (Node node : graph.getNodes()) this.outputDag.addNode(node);
-		Node nodeT, nodeH;
-		for (Edge e : graph.getEdges()){
-			if(!e.isDirected()) continue;
-			Endpoint endpoint1 = e.getEndpoint1();
-			if (endpoint1.equals(Endpoint.ARROW)){
-				nodeT = e.getNode1(); 
-				nodeH = e.getNode2();
-			}else{
-				nodeT = e.getNode2();
-				nodeH = e.getNode1();
-			}
-			if(!this.outputDag.paths().existsDirectedPath(nodeT, nodeH)) this.outputDag.addEdge(e);
-		}
-	}
-
-
+	/**
+	 * Rebuilds the input graph to ensure it is a valid pattern.
+	 * This method applies the Meek rules to orient the edges and ensure that the graph is a valid pattern.
+	 * It also converts the graph to a PDAG (Partially Directed Acyclic Graph)
+	 * @param graph The graph to validate and rebuild as a PDAG.
+	 */
     private void rebuildPattern(Graph graph) {
         GraphSearchUtils.basicCpdag(graph);
         pdag(graph);
     }
 
-	
+
+	/**
+	 * Cleans the undirected edges in the graph by converting them to directed edges.
+	 * This method iterates through the edges of the graph and transforms undirected edges into two directed edges,
+	 * ensuring that the resulting graph maintains only directed edges.
+	 * @return
+	 */
 	private List<Edge> cleanUndirectedEdges() {
 		Set<Edge> edges1 = graph.getEdges();
 		List<Edge> edges = new ArrayList<>();
@@ -150,6 +207,14 @@ public class BackwardEquivalenceSearchDSep {
 		return edges;
 	}
 
+	/**
+	 * Calculates the best candidate edge for deletion based on the current score and the edges available.
+	 * This method evaluates each edge and its possible conditioning sets to find the edge that, when deleted,
+	 * results in the highest score improvement while maintaining the d-separation condition.
+	 * @param edges List of edges to consider for deletion.
+	 * @param score The current score before any edge deletion.
+	 * @return An EdgeCandidate object representing the best edge to delete, or null if no suitable edge is found.
+	 */
 	private EdgeCandidate calculateBestCandidateEdge(List<Edge> edges, double score){
 		double bestScore = score;
 		EdgeCandidate bestCandidate = null;
@@ -195,6 +260,14 @@ public class BackwardEquivalenceSearchDSep {
 		return bestCandidate;
 	}
 
+	/**
+	 * Executes the deletion of the best candidate edge from the graph.
+	 * This method removes the edge from the graph and updates the local score map.
+	 * It also rebuilds the pattern after the deletion and updates the number of inserted edges.
+	 * @param bestCandidate The best candidate edge to delete, containing the tail, head, conditioning set, and score.
+	 * @return The score after the edge deletion is executed.
+	 * This score reflects the new state of the graph after the edge has been removed.
+	 */
 	private double executeEdgeDeletion(EdgeCandidate bestCandidate) {
 		Node bestTail;
 		Node bestHead;
@@ -227,23 +300,53 @@ public class BackwardEquivalenceSearchDSep {
 		return score;
 	}
 
+	/**
+	 * Creates the output DAG from the final graph after applying the Backward Equivalence Search.
+	 * This method ensures that the final graph is a valid DAG by removing any cycles and undirected edges.
+	 * It converts the graph from a PDAG to a DAG and rebuilds the output DAG from the final graph.
+	 * The output DAG contains all nodes and directed edges, ensuring that it is acyclic.
+	 * 
+	 * @see Utils#pdagToDag(Graph)
+	 * @see Dag
+	 */
+	private void createOutputDag() {
+		// Rebuild the pattern to ensure the final graph is a DAG
+		pdagToDag(graph);
+
+		// Rebuild the output DAG from the final graph
+		this.outputDag = new Dag();
+		for (Node node : graph.getNodes()) this.outputDag.addNode(node);
+		Node nodeT, nodeH;
+		for (Edge e : graph.getEdges()){
+			if(!e.isDirected()) continue;
+			Endpoint endpoint1 = e.getEndpoint1();
+			if (endpoint1.equals(Endpoint.ARROW)){
+				nodeT = e.getNode1(); 
+				nodeH = e.getNode2();
+			}else{
+				nodeT = e.getNode2();
+				nodeH = e.getNode1();
+			}
+			if(!this.outputDag.paths().existsDirectedPath(nodeT, nodeH)) this.outputDag.addEdge(e);
+		}
+	}
+
 
 
     /**
-     * Fully direct a graph with background knowledge. I am not sure how to
-     * adapt Chickering's suggested algorithm above (dagToPdag) to incorporate
-     * background knowledge, so I am also implementing this algorithm based on
-     * Meek's 1995 UAI paper. Notice it is the same implemented in PcSearch.
-     * </p> *IMPORTANT!* *It assumes all colliders are oriented, as well as
+	 * Transforms a dag into a pdag assuming that all colliders are oriented, as well as
      * arrows dictated by time order.*
-     * 
-     * ELIMINADO BACKGROUND KNOWLEDGE
+     * @param graph The graph to transform into a PDAG.
+	 * @see MeekRules
+	 * @see GraphSearchUtils#basicCpdag(Graph)
+	 * 
      */
     private void pdag(Graph graph) {
         MeekRules rules = new MeekRules();
         rules.setMeekPreventCycles(true);
         rules.orientImplied(graph);
     }
+
 
     private static List<Node> getHNeighbors(Node x, Node y, Graph graph) {
 		List<Node> hNeighbors = new LinkedList<>(graph.getAdjacentNodes(y));
@@ -308,7 +411,7 @@ public class BackwardEquivalenceSearchDSep {
 			LinkedList<Node> conditioning = new LinkedList<>();
 			conditioning.addAll(set);
 			for(Dag g: this.initialDags){
-				if(!dSeparated(g,y, x, conditioning)) return 0.0;
+				if(!Utils.dSeparated(g,y, x, conditioning)) return 0.0;
 			}
 			eval = 1.0; //eval / (double) this.setOfdags.size();
 			val = eval;
@@ -319,103 +422,7 @@ public class BackwardEquivalenceSearchDSep {
 		}
 	}
 
-	boolean dSeparated(Dag g, Node x, Node y, LinkedList<Node> cond){
-		
-		LinkedList<Node> open = new LinkedList<Node>();
-		HashMap<String,Node> close = new HashMap<String,Node>();
-		open.add(x);
-		open.add(y);
-		open.addAll(cond);
-		while (open.size() != 0){
-			Node a = open.getFirst();
-			open.remove(a);
-			close.put(a.toString(),a);
-			List<Node> pa =g.getParents(a);
-			for(Node p : pa){
-				if(close.get(p.toString()) == null){
-					if(!open.contains(p)) open.addLast(p);
-				}
-			}
-        }
 
-        Graph aux = new EdgeListGraph();
-		
-		for (Node node : g.getNodes()) aux.addNode(node);
-		Node nodeT, nodeH;
-		for (Edge e : g.getEdges()){
-			if(!e.isDirected()) continue;
-			nodeT = e.getNode1();
-			nodeH = e.getNode2();
-			if((close.get(nodeH.toString())!=null)&&(close.get(nodeT.toString())!=null)){
-				Edge newEdge = new Edge(e.getNode1(),e.getNode2(),e.getEndpoint1(),e.getEndpoint2());
-				aux.addEdge(newEdge);
-			}
-		}
-		
-		close = new HashMap<String,Node>();
-		for(Edge e: aux.getEdges()){
-			if(e.isDirected()){
-				Node h;
-				if(e.getEndpoint1()==Endpoint.ARROW){
-					h = e.getNode1();
-				}else h = e.getNode2();
-				if(close.get(h.toString())==null){
-					close.put(h.toString(),h);
-					List<Node> pa = aux.getParents(h);
-					if(pa.size()>1){
-						for(int i = 0 ; i< pa.size() - 1; i++)
-							for(int j = i+1; j < pa.size(); j++){
-								Node p1 = pa.get(i);
-								Node p2 = pa.get(j);
-								boolean found = false;
-								for(Edge edge : aux.getEdges()){
-									if(edge.getNode1().equals(p1)&&(edge.getNode2().equals(p2))){
-										found = true;
-										break;
-									}
-									if(edge.getNode2().equals(p1)&&(edge.getNode1().equals(p2))){
-										found = true;
-										break;
-									}
-								}
-								if(!found) aux.addUndirectedEdge(p1, p2);
-							}
-					}
-					
-				}
-			}
-		}
-		
-		for(Edge e: aux.getEdges()){
-			if(e.isDirected()){
-				e.setEndpoint1(Endpoint.TAIL);
-				e.setEndpoint2(Endpoint.TAIL);
-			}
-		}
-		
-		aux.removeNodes(cond);
-
-		open = new LinkedList<Node>();
-		close = new HashMap<String,Node>();
-		open.add(x);
-		while (open.size() != 0){
-			Node a = open.getFirst();
-			if(a.equals(y)) return false;
-			open.remove(a);
-			close.put(a.toString(),a);
-			List<Node> pa =aux.getAdjacentNodes(a);
-			for(Node p : pa){
-				if(p == null) continue;
-				if(close.get(p.toString()) == null){
-					if(!open.contains(p)) open.addLast(p);
-				}
-			}
-		}
-		
-		return true;
-	}
-       
-    
     	
 	private static boolean isClique(List<Node> set, Graph graph) {
 		List<Node> setv = new LinkedList<Node>(set);

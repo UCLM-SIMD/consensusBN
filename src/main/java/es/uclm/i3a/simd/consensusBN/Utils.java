@@ -1,10 +1,16 @@
 package es.uclm.i3a.simd.consensusBN;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
+import edu.cmu.tetrad.graph.Dag;
 import edu.cmu.tetrad.graph.Edge;
 import edu.cmu.tetrad.graph.EdgeListGraph;
+import edu.cmu.tetrad.graph.Endpoint;
 import edu.cmu.tetrad.graph.Graph;
 import edu.cmu.tetrad.graph.GraphUtils;
 import edu.cmu.tetrad.graph.Node;
@@ -64,5 +70,108 @@ public class Utils {
             nodes.remove(x);
         }while(nodes.size() > 0);
     }
+
+
+	public static boolean dSeparated(Dag g, Node x, Node y, List<Node> cond) {
+
+		Set<Node> relevantNodes = findRelevantNodes(g, x, y, cond);
+		Graph aux = buildInducedSubgraph(g, relevantNodes);
+		moralize(aux);
+		convertToUndirected(aux);
+		aux.removeNodes(cond);
+		return !isReachable(aux, x, y);
+	}
+
+	private static Set<Node> findRelevantNodes(Dag g, Node x, Node y, List<Node> cond) {
+		Set<Node> visited = new HashSet<>();
+		Deque<Node> stack = new ArrayDeque<>();
+
+		stack.push(x);
+		stack.push(y);
+		for (Node c : cond) stack.push(c);
+
+		while (!stack.isEmpty()) {
+			Node current = stack.pop();
+			if (visited.add(current)) {
+				for (Node parent : g.getParents(current)) {
+					stack.push(parent);
+				}
+			}
+		}
+
+		return visited;
+	}
+
+	private static Graph buildInducedSubgraph(Dag g, Set<Node> nodesToKeep) {
+		Graph subgraph = new EdgeListGraph();
+
+		for (Node node : g.getNodes()) {
+			if (nodesToKeep.contains(node)) {
+				subgraph.addNode(node);
+			}
+		}
+
+		for (Edge e : g.getEdges()) {
+			if (!e.isDirected()) continue;
+
+			Node tail = e.getNode1();
+			Node head = e.getNode2();
+
+			if (nodesToKeep.contains(tail) && nodesToKeep.contains(head)) {
+				subgraph.addEdge(new Edge(tail, head, e.getEndpoint1(), e.getEndpoint2()));
+			}
+		}
+
+		return subgraph;
+	}
+
+	private static void moralize(Graph graph) {
+		for (Node child : graph.getNodes()) {
+			List<Node> parents = graph.getParents(child);
+			int n = parents.size();
+			if (n <= 1) continue;
+
+			for (int i = 0; i < n - 1; i++) {
+				for (int j = i + 1; j < n; j++) {
+					Node p1 = parents.get(i);
+					Node p2 = parents.get(j);
+					if (!graph.isAdjacentTo(p1, p2)) {
+						graph.addUndirectedEdge(p1, p2);
+					}
+				}
+			}
+		}
+	}
+
+	private static void convertToUndirected(Graph graph) {
+		for (Edge e : new ArrayList<>(graph.getEdges())) {
+			if (e.isDirected()) {
+				e.setEndpoint1(Endpoint.TAIL);
+				e.setEndpoint2(Endpoint.TAIL);
+			}
+		}
+	}
+
+	private static boolean isReachable(Graph g, Node start, Node target) {
+		Set<Node> visited = new HashSet<>();
+		Deque<Node> stack = new ArrayDeque<>();
+		stack.push(start);
+
+		while (!stack.isEmpty()) {
+			Node current = stack.pop();
+			if (current.equals(target)) return true;
+			if (visited.add(current)) {
+				for (Node neighbor : g.getAdjacentNodes(current)) {
+					if (!visited.contains(neighbor)) {
+						stack.push(neighbor);
+					}
+				}
+			}
+		}
+
+		return false;
+	}
+
+
     
 }
