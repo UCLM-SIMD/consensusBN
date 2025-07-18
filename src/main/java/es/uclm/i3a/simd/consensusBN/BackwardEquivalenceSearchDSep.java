@@ -231,7 +231,7 @@ public class BackwardEquivalenceSearchDSep {
 				SubSet hSubset=hSubsets.nextElement();
 				
 				// Checking if {naYXH} \ {hSubset} is a clique
-				List<Node> naYXH = findNaYX(candidateTail, candidateHead, graph);
+				List<Node> naYXH = Utils.findNaYX(candidateTail, candidateHead, graph);
 				naYXH.removeAll(hSubset);
 				if (!isClique(naYXH, graph)) {
 					continue;
@@ -348,6 +348,16 @@ public class BackwardEquivalenceSearchDSep {
     }
 
 
+	/**
+	 * Finds all neighbors of node x that are adjacent to node y in the graph.
+	 * This method retrieves the neighbors of node y that are also adjacent to node x,
+	 * ensuring that the edges between them are undirected.
+	 * It filters out undirected edges to ensure that only neighbors from directed edges are considered.
+	 * @param x Node x to find neighbors for.
+	 * @param y Node y to find neighbors for.
+	 * @param graph The graph in which to find the neighbors.
+	 * @return A list of nodes that are neighbors of x and y, filtered to include only neighbors from directed edges.
+	 */
     private static List<Node> getHNeighbors(Node x, Node y, Graph graph) {
 		List<Node> hNeighbors = new LinkedList<>(graph.getAdjacentNodes(y));
 		hNeighbors.retainAll(graph.getAdjacentNodes(x));
@@ -363,44 +373,52 @@ public class BackwardEquivalenceSearchDSep {
 		return hNeighbors;
 	}
 
-    private static void delete(Node x, Node y, Set<Node> subset, Graph graph) {
-        graph.removeEdges(x, y);
+	/**
+	 * Applies the delete operation from Chickering 2002 for the edge x->y in the graph, and updates the edges
+	 * connecting x and y to the nodes in the provided subset. This is done to ensure that the same dependency structure is maintained
+	 * while removing the edge between x and y.
+	 * @param tailNode The tail node of the edge to be deleted.
+	 * @param headNode The head node of the edge to be deleted.
+	 * @param subset The set of nodes that will be connected to the tail and head nodes after the deletion.
+	 * @param graph The graph from which the edge is deleted and the connections are updated.
+	 */
+    private static void delete(Node tailNode, Node headNode, Set<Node> subset, Graph graph) {
+        graph.removeEdges(tailNode, headNode);
 
         for (Node aSubset : subset) {
-            if (!graph.isParentOf(aSubset, x) && !graph.isParentOf(x, aSubset)) {
-                graph.removeEdge(x, aSubset);
-                graph.addDirectedEdge(x, aSubset);
+            if (!graph.isParentOf(aSubset, tailNode) && !graph.isParentOf(tailNode, aSubset)) {
+                graph.removeEdge(tailNode, aSubset);
+                graph.addDirectedEdge(tailNode, aSubset);
             }
-            graph.removeEdge(y, aSubset);
-            graph.addDirectedEdge(y, aSubset);
+            graph.removeEdge(headNode, aSubset);
+            graph.addDirectedEdge(headNode, aSubset);
         }
     }
 
-    private double deleteEval(Node x, Node y, SubSet h, Graph graph){
+	/**
+	 * Evaluates the impact of deleting an edge from the graph based on d-separation.
+	 *
+	 * This method computes a score for deleting the edge from {@code x} to {@code y},
+	 * taking into account a conditioning set of nodes {@code conditioningSet}. It uses
+	 * structural information from the graph to assess whether {@code y} is d-separated
+	 * from {@code x} given the constructed conditioning set.
+	 *
+	 * @param x The source node of the edge to be deleted.
+	 * @param y The target node of the edge to be deleted.
+	 * @param conditioningSet The set of nodes used as conditioning variables (Z) for d-separation.
+	 * @param graph The graph in which the change is being evaluated.
+	 * @return The score resulting from deleting the edge, based on the given context.
+	 */
+    private double deleteEval(Node x, Node y, SubSet conditioningSet, Graph graph){
+		// Setup the conditioning set for d-separation by removing the conditioning nodes from the naYX set, adding the parents of y and removing x.
+		Set<Node> finalConditioningSet = new HashSet<>(Utils.findNaYX(x, y, graph));
+		finalConditioningSet.removeAll(conditioningSet);
+		finalConditioningSet.addAll(graph.getParents(y));
+		finalConditioningSet.remove(x);
 		
-		 Set<Node> set1 = new HashSet<Node>(findNaYX(x, y, graph));
-	        set1.removeAll(h);
-	        set1.addAll(graph.getParents(y));
-	        set1.remove(x);
-	        return scoreGraphChangeDelete(y, x, set1); // calcular si y esta d-separado de x dado el set1 en cada grafo.
-		
+		// Check if y is d-separated from x given the final conditioning set in each graph. 
+		return scoreGraphChangeDelete(y, x, finalConditioningSet);		
 	}
-
-    private static List<Node> findNaYX(Node x, Node y, Graph graph) {
-        List<Node> naYX = new LinkedList<>(graph.getAdjacentNodes(y));
-        naYX.retainAll(graph.getAdjacentNodes(x));
-
-        for (int i = naYX.size()-1; i >= 0; i--) {
-            Node z = naYX.get(i);
-            Edge edge = graph.getEdge(y, z);
-
-            if (!Edges.isUndirectedEdge(edge)) {
-                naYX.remove(z);
-            }
-        }
-
-        return naYX;
-    }
 
     private double scoreGraphChangeDelete(Node y, Node x, Set<Node> set){
 		

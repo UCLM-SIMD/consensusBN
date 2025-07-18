@@ -2,7 +2,6 @@ package es.uclm.i3a.simd.consensusBN;
 
 import java.util.ArrayList;
 
-
 import edu.cmu.tetrad.graph.Dag;
 import edu.cmu.tetrad.graph.Edge;
 import edu.cmu.tetrad.graph.Node;
@@ -31,7 +30,7 @@ public class PairWiseConsensusBES implements Runnable{
 		conBES = new ConsensusBES(setOfDags);
 		conBES.fusion();
 		this.numberOfInsertedEdges = conBES.getNumberOfInsertedEdges();
-		this.numberOfUnionEdges  = conBES.union.getNumEdges();
+		this.numberOfUnionEdges  = conBES.getUnion().getNumEdges();
 		this.conDAG = conBES.getFusion();
 	}
 	
@@ -49,7 +48,7 @@ public class PairWiseConsensusBES implements Runnable{
 		for(Edge ed: this.conDAG.getEdges()){
 			Node tail = ed.getNode1();
 			Node head = ed.getNode2();
-			for(Dag g: conBES.setOfOutDags){	
+			for(Dag g: conBES.getTransformedDags()){	
 				Edge edge1 = g.getEdge(tail, head);
 				Edge edge2 = g.getEdge(head, tail);
 				if(edge1 == null && edge2==null) distance++;

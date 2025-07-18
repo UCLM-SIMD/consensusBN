@@ -40,12 +40,12 @@ public class HeuristicConsensusBES {
 	public HeuristicConsensusBES(ArrayList<Dag> dags, double percentage){
 		this.setOfdags = dags;
 		this.heuristic = new AlphaOrder(this.setOfdags);
-		this.heuristic.computeAlphaH2();
-		this.alpha = this.heuristic.alpha;
+		this.heuristic.computeAlpha();
+		this.alpha = this.heuristic.getOrder();
 		this.imaps2alpha = new TransformDags(this.setOfdags,this.alpha);
 		this.imaps2alpha.transform();
 		this.numberOfInsertedEdges = imaps2alpha.getNumberOfInsertedEdges();
-		this.setOfOutDags = imaps2alpha.setOfOutputDags;
+		this.setOfOutDags = imaps2alpha.getSetOfOutputDags();
 		this.percentage = percentage;
 	}
 	
@@ -58,7 +58,7 @@ public class HeuristicConsensusBES {
 		
 		this.union = new Dag(this.alpha);
 		for(Node nodei: this.alpha){
-			for(Dag d : this.imaps2alpha.setOfOutputDags){
+			for(Dag d : this.imaps2alpha.getSetOfOutputDags()){
 				List<Node>parent = d.getParents(nodei);
 				for(Node pa: parent){
 					if(!this.union.isParentOf(pa, nodei)) this.union.addEdge(new Edge(pa,nodei,Endpoint.TAIL,Endpoint.ARROW));
@@ -128,7 +128,7 @@ public class HeuristicConsensusBES {
 					}
 
 					// INICIO TEST 1
-					List<Node> naYXH = findNaYX(_x, _y, graph);
+					List<Node> naYXH = Utils.findNaYX(_x, _y, graph);
 					naYXH.removeAll(hSubset);
 					if (!isClique(naYXH, graph)) {
 //		                    	hSubsets.firstTest(true); // Si pasa para H entonces pasa para cualquier H' | H' contiene H
@@ -250,7 +250,7 @@ public class HeuristicConsensusBES {
 	
 	double deleteEval(Node x, Node y, SubSet h, Graph graph){
 		
-		 Set<Node> set1 = new HashSet<Node>(findNaYX(x, y, graph));
+		 Set<Node> set1 = new HashSet<Node>(Utils.findNaYX(x, y, graph));
 	        set1.removeAll(h);
 	        set1.addAll(graph.getParents(y));
 	        set1.remove(x);
@@ -374,23 +374,6 @@ public class HeuristicConsensusBES {
 		
 		return true;
 	}
-	
-	
-    private static List<Node> findNaYX(Node x, Node y, Graph graph) {
-        List<Node> naYX = new LinkedList<Node>(graph.getAdjacentNodes(y));
-        naYX.retainAll(graph.getAdjacentNodes(x));
-
-        for (int i = naYX.size()-1; i >= 0; i--) {
-            Node z = naYX.get(i);
-            Edge edge = graph.getEdge(y, z);
-
-            if (!Edges.isUndirectedEdge(edge)) {
-                naYX.remove(z);
-            }
-        }
-
-        return naYX;
-    }
     
     public Dag getFusion(){
     	

@@ -16,39 +16,28 @@ import edu.cmu.tetrad.graph.Node;
 
 class BackwardEquivalenceSearchDSepTest {
 
-    private Dag createSimpleDag() {
-        // A -> B -> C
-        Node a = new GraphNode("A");
-        Node b = new GraphNode("B");
-        Node c = new GraphNode("C");
 
-        Dag dag = new Dag();
-        dag.addNode(a);
-        dag.addNode(b);
-        dag.addNode(c);
+    private ArrayList<Dag> createRandomDagList(int copies) {
+        RandomBN setOfDags = new RandomBN(0, 20, 50,
+				copies,3);
+		setOfDags.setMaxInDegree(4);
+		setOfDags.setMaxOutDegree(4);
+		setOfDags.generate();
 
-        dag.addDirectedEdge(a, b);
-        dag.addDirectedEdge(b, c);
-
-        return dag;
-    }
-
-    private ArrayList<Dag> createDagList(int copies) {
-        ArrayList<Dag> list = new ArrayList<>();
-        for (int i = 0; i < copies; i++) {
-            list.add(createSimpleDag());
-        }
-        return list;
+        return setOfDags.setOfRandomDags;
     }
 
     @Test
     void testApplyBESdDoesNotThrow() {
-        Dag unionDag = createSimpleDag();
-        ArrayList<Dag> initialDags = createDagList(3);
-        ArrayList<Dag> transformedDags = createDagList(3);
+        // Setting up consensus union
+        ArrayList<Dag> initialDags = createRandomDagList(3);
+        ConsensusUnion consensusUnion = new ConsensusUnion(initialDags);
+        Dag unionDag = consensusUnion.union();
+        
+        // Running Backward Equivalence Search with d-separation
+        BackwardEquivalenceSearchDSep besd = new BackwardEquivalenceSearchDSep(unionDag, initialDags, consensusUnion.getTransformedDags());
 
-        BackwardEquivalenceSearchDSep besd = new BackwardEquivalenceSearchDSep(unionDag, initialDags, transformedDags);
-
+        // No exceptions should be thrown during the process
         assertDoesNotThrow(() -> {
             Dag output = besd.applyBackwardEliminationWithDSeparation();
             assertNotNull(output);
@@ -57,11 +46,13 @@ class BackwardEquivalenceSearchDSepTest {
 
     @Test
     void testOutputIsDAG() {
-        Dag unionDag = createSimpleDag();
-        ArrayList<Dag> initialDags = createDagList(2);
-        ArrayList<Dag> transformedDags = createDagList(2);
-
-        BackwardEquivalenceSearchDSep besd = new BackwardEquivalenceSearchDSep(unionDag, initialDags, transformedDags);
+        // Setting up consensus union
+        ArrayList<Dag> initialDags = createRandomDagList(3);
+        ConsensusUnion consensusUnion = new ConsensusUnion(initialDags);
+        Dag unionDag = consensusUnion.union();
+        
+        // Running Backward Equivalence Search with d-separation
+        BackwardEquivalenceSearchDSep besd = new BackwardEquivalenceSearchDSep(unionDag, initialDags, consensusUnion.getTransformedDags());
         Dag outputDag = besd.applyBackwardEliminationWithDSeparation();
 
         assertTrue(GraphUtils.isDag(outputDag), "El resultado no es un DAG válido.");
@@ -82,12 +73,19 @@ class BackwardEquivalenceSearchDSepTest {
         Dag dag1 = new Dag();
         dag1.addNode(a);
         dag1.addNode(b);
+
+        Dag dag2 = new Dag();
+        dag2.addNode(a);
+        dag2.addNode(b);
+        // Aquí no hay aristas, A y B están desconectados
         // sin conexión
 
         ArrayList<Dag> initialDags = new ArrayList<>();
         initialDags.add(dag1);
-        ArrayList<Dag> transformedDags = new ArrayList<>();
-        transformedDags.add(dag1);
+        initialDags.add(dag2);
+        AlphaOrder alphaOrder = new AlphaOrder(initialDags);
+        alphaOrder.computeAlpha();
+        ArrayList<Dag> transformedDags = (new TransformDags(initialDags, alphaOrder.getOrder())).transform();
 
         BackwardEquivalenceSearchDSep besd = new BackwardEquivalenceSearchDSep(unionDag, initialDags, transformedDags);
         Dag outputDag = besd.applyBackwardEliminationWithDSeparation();
@@ -99,14 +97,18 @@ class BackwardEquivalenceSearchDSepTest {
 
     @Test
     void testGetNumberOfInsertedEdgesReflectsChanges() {
-        Dag unionDag = createSimpleDag();
-        ArrayList<Dag> dags = createDagList(2);
+        ArrayList<Dag> initialDags = createRandomDagList(2);
+        ConsensusUnion consensusUnion = new ConsensusUnion(initialDags);
+        Dag unionDag = consensusUnion.union();
+        ArrayList<Dag> transformedDags = consensusUnion.getTransformedDags();
+        int insertedEdgesBefore = consensusUnion.getNumberOfInsertedEdges();
 
-        BackwardEquivalenceSearchDSep besd = new BackwardEquivalenceSearchDSep(unionDag, dags, dags);
+        BackwardEquivalenceSearchDSep besd = new BackwardEquivalenceSearchDSep(unionDag, initialDags, transformedDags);
         besd.applyBackwardEliminationWithDSeparation();
 
-        int insertedEdges = besd.getNumberOfInsertedEdges();
+        int insertedEdgesAfter = besd.getNumberOfInsertedEdges();
         // En el peor de los casos no ha eliminado ninguna, pero nunca debe ser negativo
-        assertTrue(insertedEdges >= 0, "El número de aristas insertadas no puede ser negativo.");
+        assertTrue(insertedEdgesAfter >= 0, "The number of inserted edges should not be negative.");
+        assertTrue(insertedEdgesAfter <= insertedEdgesBefore, "The number of inserted edges should decrease after BES.");
     }
 }

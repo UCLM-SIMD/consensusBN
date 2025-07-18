@@ -4,12 +4,14 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
 import edu.cmu.tetrad.graph.Dag;
 import edu.cmu.tetrad.graph.Edge;
 import edu.cmu.tetrad.graph.EdgeListGraph;
+import edu.cmu.tetrad.graph.Edges;
 import edu.cmu.tetrad.graph.Endpoint;
 import edu.cmu.tetrad.graph.Graph;
 import edu.cmu.tetrad.graph.GraphUtils;
@@ -172,6 +174,32 @@ public class Utils {
 		return false;
 	}
 
+
+    	/**
+	 * Finds the nodes that are neighbors of node y and x in the graph.
+	 * This method retrieves the neighbors of node y that are also adjacent to node x,
+	 * ensuring that the edges between them are directed.
+	 * It filters out undirected edges to ensure that only neighbors from directed edges are considered.
+	 * @param x Node x to find neighbors for.
+	 * @param y Node y to find neighbors for.
+	 * @param graph The graph in which to find the neighbors.
+	 * @return A list of nodes that are neighbors of x and y, filtered to include only neighbors from directed edges.
+	 */
+    public static List<Node> findNaYX(Node x, Node y, Graph graph) {
+        List<Node> naYX = new LinkedList<>(graph.getAdjacentNodes(y));
+        naYX.retainAll(graph.getAdjacentNodes(x));
+
+        for (int i = naYX.size()-1; i >= 0; i--) {
+            Node z = naYX.get(i);
+            Edge edge = graph.getEdge(y, z);
+
+            if (!Edges.isUndirectedEdge(edge)) {
+                naYX.remove(z);
+            }
+        }
+
+        return naYX;
+    }
 
     
 }

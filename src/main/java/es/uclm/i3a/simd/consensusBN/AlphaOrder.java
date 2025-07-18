@@ -253,7 +253,6 @@ public class AlphaOrder {
 			Edge pay = g.getEdge(nodep, child);
 			if(pay == null)
 				g.addEdge(new Edge(nodep,child,Endpoint.TAIL,Endpoint.ARROW));
-
 		}
 		
 		// Adding edges from parents of child to nodeAlpha.
