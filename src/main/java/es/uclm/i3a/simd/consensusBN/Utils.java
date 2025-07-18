@@ -74,6 +74,10 @@ public class Utils {
     }
 
 
+	public static boolean dSeparated(Dag g, Node x, Node y) {
+		return dSeparated(g, x, y, new ArrayList<>());
+	}
+
 	public static boolean dSeparated(Dag g, Node x, Node y, List<Node> cond) {
 
 		Set<Node> relevantNodes = findRelevantNodes(g, x, y, cond);
