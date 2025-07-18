@@ -105,7 +105,7 @@ public class ConsensusBES implements Runnable {
 	 * This method retrieves the final fused DAG, which represents the optimal fusion of the input DAGs.
 	 * @return the resulting output DAG after the fusion process.
 	 */
-    public Dag getFusion(){
+    public Dag getFusionDag(){
     	return this.outputDag;
     }
     
@@ -114,7 +114,7 @@ public class ConsensusBES implements Runnable {
 	 * @return
 	 */
     public List<Node> getOrderFusion(){
-    	return  this.getFusion().paths().getValidOrder(this.getFusion().getNodes(),true);
+    	return  this.getFusionDag().paths().getValidOrder(this.getFusionDag().getNodes(),true);
     }
     
 	/**

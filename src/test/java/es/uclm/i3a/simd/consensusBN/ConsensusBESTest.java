@@ -111,7 +111,7 @@ public class ConsensusBESTest {
 
     	ConsensusBES conDag = new ConsensusBES(setOfDags.setOfRandomDags);
     	conDag.fusion();
-    	Dag besDag = conDag.getFusion();
+    	Dag besDag = conDag.getFusionDag();
         Dag unionDag = conDag.getUnion();
         ConsensusUnion consensusUnion = conDag.getConsensusUnion();
         int totalNumberOfInsertedEdges = conDag.getNumberOfInsertedEdges();
@@ -131,7 +131,7 @@ public class ConsensusBESTest {
         ConsensusBES fusionAlgorithm = new ConsensusBES(inputDags);
         fusionAlgorithm.fusion();
 
-        Dag result = fusionAlgorithm.getFusion();
+        Dag result = fusionAlgorithm.getFusionDag();
         assertNotNull(result, "El DAG de salida no debe ser null.");
         assertFalse(result.paths().existsDirectedCycle(), "El DAG resultante no debe tener ciclos.");
     }
@@ -183,7 +183,7 @@ public class ConsensusBESTest {
             fail("El hilo fue interrumpido.");
         }
 
-        assertNotNull(fusionAlgorithm.getFusion(), "El DAG resultante debe existir tras ejecutar run().");
+        assertNotNull(fusionAlgorithm.getFusionDag(), "El DAG resultante debe existir tras ejecutar run().");
     }
 
 }
