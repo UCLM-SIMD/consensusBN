@@ -1,9 +1,9 @@
 package es.uclm.i3a.simd.consensusBN;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
@@ -89,5 +89,21 @@ public class BetaToAlphaTest {
             Node node = alphaOrder.get(i);
             assertEquals(i, (bta.getAlphaHash()).get(node));
         }
+    }
+
+
+    @Test
+    public void setterAndGetterTest(){
+        ArrayList<Node> firstOrder = new ArrayList<>(Arrays.asList(a, b, c));
+        BetaToAlpha b2Alpha = new BetaToAlpha(dag, firstOrder);
+        List<Node> newOrder = new ArrayList<>(Arrays.asList(c, b, a));
+        b2Alpha.setAlphaOrder(newOrder);
+        
+        List<Node> order = b2Alpha.getAlphaOrder();
+        assertNotNull(order);
+        assertEquals(3, order.size());
+        assertTrue(order.contains(c));
+        assertTrue(order.contains(b));
+        assertTrue(order.contains(a));
     }
 }
