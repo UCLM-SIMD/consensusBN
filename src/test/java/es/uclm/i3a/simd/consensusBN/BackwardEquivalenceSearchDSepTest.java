@@ -106,7 +106,7 @@ class BackwardEquivalenceSearchDSepTest {
         BackwardEquivalenceSearchDSep besd = new BackwardEquivalenceSearchDSep(unionDag, initialDags, transformedDags);
         besd.applyBackwardEliminationWithDSeparation();
 
-        int insertedEdgesAfter = besd.getNumberOfInsertedEdges();
+        int insertedEdgesAfter = insertedEdgesBefore - besd.getNumberOfRemovedEdges();
         // En el peor de los casos no ha eliminado ninguna, pero nunca debe ser negativo
         assertTrue(insertedEdgesAfter >= 0, "The number of inserted edges should not be negative.");
         assertTrue(insertedEdgesAfter <= insertedEdgesBefore, "The number of inserted edges should decrease after BES.");

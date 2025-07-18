@@ -97,7 +97,7 @@ public class ConsensusBES implements Runnable {
 		BackwardEquivalenceSearchDSep bes = new BackwardEquivalenceSearchDSep(this.union, this.inputDags, this.transformedDags);
 		this.outputDag = bes.applyBackwardEliminationWithDSeparation();
 		// 3. Updating numberOfInsertedEdges
-		this.numberOfInsertedEdges += bes.getNumberOfInsertedEdges();
+		this.numberOfInsertedEdges -= bes.getNumberOfRemovedEdges();
 	}
 	
 	/**

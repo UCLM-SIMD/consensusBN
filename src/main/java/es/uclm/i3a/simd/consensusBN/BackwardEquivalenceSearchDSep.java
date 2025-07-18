@@ -1,8 +1,6 @@
 package es.uclm.i3a.simd.consensusBN;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -16,6 +14,7 @@ import edu.cmu.tetrad.graph.EdgeListGraph;
 import edu.cmu.tetrad.graph.Edges;
 import edu.cmu.tetrad.graph.Endpoint;
 import edu.cmu.tetrad.graph.Graph;
+import edu.cmu.tetrad.graph.GraphUtils;
 import edu.cmu.tetrad.graph.Node;
 import edu.cmu.tetrad.search.utils.GraphSearchUtils;
 import edu.cmu.tetrad.search.utils.MeekRules;
@@ -75,14 +74,14 @@ public class BackwardEquivalenceSearchDSep {
     private final Map<DSeparationKey, Double> localScore = new HashMap<>();
 
 	/**
-	 * Number of edges inserted during the consensus union and backward equivalence search process.
-	 * This variable keeps track of the total number of edges that were added to the consensus DAG
-	 * during the union of transformed input DAGs and the subsequent edge deletions.
+	 * Number of edges removed during the backward equivalence search process.
+	 * This variable keeps track of the total number of edges that are inserted (deleted) during the 
+	 * Backward Equivalence Search with D-separation process.
 	 * 
 	 * @see ConsensusUnion#getNumberOfInsertedEdges()
 	 * @see BackwardEquivalenceSearchDSep#applyBackwardEliminationWithDSeparation()
 	 */
-    private int numberOfInsertedEdges = 0;
+    private int numberOfRemovedEdges = 0;
 
 	/**
 	 * Constructor for BackwardEquivalenceSearchDSep that initializes the properties for the search with a union DAG and lists of initial and transformed DAGs.
@@ -233,7 +232,7 @@ public class BackwardEquivalenceSearchDSep {
 				// Checking if {naYXH} \ {hSubset} is a clique
 				List<Node> naYXH = Utils.findNaYX(candidateTail, candidateHead, graph);
 				naYXH.removeAll(hSubset);
-				if (!isClique(naYXH, graph)) {
+				if (!GraphUtils.isClique(naYXH, graph)) {
 					continue;
 				}
 
@@ -293,7 +292,7 @@ public class BackwardEquivalenceSearchDSep {
 		for(int g = 0; g <this.transformedDags.size(); g++){
 			if(this.transformedDags.get(g).getEdge(bestTail, bestHead) != null || this.transformedDags.get(g).getEdge(bestHead, bestTail) != null) deletedEdges++;
 		}
-		this.numberOfInsertedEdges-= deletedEdges;
+		this.numberOfRemovedEdges+= deletedEdges;
 
 		// Updating the initial score of the iteration
 		score = bestScore;
@@ -420,17 +419,35 @@ public class BackwardEquivalenceSearchDSep {
 		return scoreGraphChangeDelete(y, x, finalConditioningSet);		
 	}
 
-	private double scoreGraphChangeDelete(Node y, Node x, Set<Node> conditioningSet) {
+	/**
+	 * Checks if the deletion of an edge from {@code x} to {@code y} maintains the d-separation condition
+	 * across all initial DAGs. If the edge deletion maintains d-separation, it returns a score of 1.0,
+	 * otherwise it returns 0.0.
+	 * 
+	 * This method uses a local score map to cache results for efficiency, avoiding redundant calculations
+	 * for the same edge and conditioning set.
+	 * @param x The tail node of the edge to be deleted.
+	 * @param y The head node of the edge to be deleted.
+	 * @param conditioningSet The set of nodes used as conditioning variables (Z) for d-separation.
+	 * @return A score of 1.0 if the edge deletion maintains d-separation, otherwise 0.0.
+	 * 
+	 * @see Utils#dSeparated(Dag, Node, Node, List)
+	 * @see DSeparationKey
+	 * 
+	 * This method is crucial for ensuring that the edge deletion does not violate the d-separation condition,
+	 * which is essential for maintaining the integrity of the Bayesian network structure.
+	 */
+	private double scoreGraphChangeDelete(Node x, Node y, Set<Node> conditioningSet) {
+		// Check if the edge deletion has already been evaluated and cached
 		DSeparationKey key = new DSeparationKey(y, x, conditioningSet);
 		Double cached = localScore.get(key);
-
 		if (cached != null) {
 			return cached;
 		}
 
-		// Evaluamos d-separación en todos los DAGs
+		// Evaluating the d-separation condition across all initial DAGs
 		for (Dag g : this.initialDags) {
-			if (!Utils.dSeparated(g, y, x, new ArrayList<>(conditioningSet))) {
+			if (!Utils.dSeparated(g, x, y, new ArrayList<>(conditioningSet))) {
 				localScore.put(key, 0.0);
 				return 0.0;
 			}
@@ -439,29 +456,41 @@ public class BackwardEquivalenceSearchDSep {
 		localScore.put(key, 1.0);
 		return 1.0;
 	}
-
-
-    	
-	private static boolean isClique(List<Node> set, Graph graph) {
-		List<Node> setv = new LinkedList<Node>(set);
-		for (int i = 0; i < setv.size() - 1; i++) {
-			for (int j = i + 1; j < setv.size(); j++) {
-				if (!graph.isAdjacentTo(setv.get(i), setv.get(j))) {
-					return false;
-				}
-			}
-		}
-		return true;
+	/**
+	 * Returns the number of edges that were inserted during the consensus union and backward equivalence search process.
+	 * @return
+	 */
+	public int getNumberOfRemovedEdges() {
+		return this.numberOfRemovedEdges;
 	}
 
-	public int getNumberOfInsertedEdges() {
-		return this.numberOfInsertedEdges;
-	}
-
+	/**
+	 * Class representing a candidate edge for deletion in the Backward Equivalence Search.
+	 * This class encapsulates the tail and head nodes of the edge, the conditioning set used for d-separation,
+	 * and the score associated with the edge deletion.
+	 * 
+	 * @see BackwardEquivalenceSearchDSep#applyBackwardEliminationWithDSeparation()
+	 * @see Utils#dSeparated(Dag, Node, Node, List)
+	 */
 	private class EdgeCandidate {
+		/**
+		 * The tail node of the edge candidate.
+		 */
 		public final Node tail;
+
+		/**
+		 * The head node of the edge candidate.
+		 */
 		public final Node head;
+
+		/**
+		 * The conditioning set used for d-separation in the edge candidate.
+		 */
 		public final Set<Node> conditioningSet;
+
+		/**
+		 * The score associated with the edge candidate deletion.
+		 */
 		public double score;
 
 		public EdgeCandidate(Node tail, Node head, Set<Node> conditioningSet) {
