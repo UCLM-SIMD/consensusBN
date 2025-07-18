@@ -72,7 +72,7 @@ public class BackwardEquivalenceSearchDSep {
 	 * This map is used to cache the scores of edge deletions to avoid redundant calculations.
 	 * The key is a string representation of the edge and its conditioning set, and the value is the score.
 	 */
-    private final Map<String, Double> localScore = new HashMap<>();
+    private final Map<DSeparationKey, Double> localScore = new HashMap<>();
 
 	/**
 	 * Number of edges inserted during the consensus union and backward equivalence search process.
@@ -420,24 +420,24 @@ public class BackwardEquivalenceSearchDSep {
 		return scoreGraphChangeDelete(y, x, finalConditioningSet);		
 	}
 
-    private double scoreGraphChangeDelete(Node y, Node x, Set<Node> set){
-		
-		String key = y.getName()+x.getName()+set.toString();
-		Double val = this.localScore.get(key);
-		if(val == null){
-			double eval = 0.0;
-			LinkedList<Node> conditioning = new LinkedList<>();
-			conditioning.addAll(set);
-			for(Dag g: this.initialDags){
-				if(!Utils.dSeparated(g,y, x, conditioning)) return 0.0;
-			}
-			eval = 1.0; //eval / (double) this.setOfdags.size();
-			val = eval;
-			this.localScore.put(key, val);
-			return eval;
-		}else{
-			return val.doubleValue();
+	private double scoreGraphChangeDelete(Node y, Node x, Set<Node> conditioningSet) {
+		DSeparationKey key = new DSeparationKey(y, x, conditioningSet);
+		Double cached = localScore.get(key);
+
+		if (cached != null) {
+			return cached;
 		}
+
+		// Evaluamos d-separación en todos los DAGs
+		for (Dag g : this.initialDags) {
+			if (!Utils.dSeparated(g, y, x, new ArrayList<>(conditioningSet))) {
+				localScore.put(key, 0.0);
+				return 0.0;
+			}
+		}
+
+		localScore.put(key, 1.0);
+		return 1.0;
 	}
 
 

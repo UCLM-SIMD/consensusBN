@@ -103,6 +103,23 @@ public class UtilsTest {
         assertFalse(Utils.dSeparated(dag, A, C, Collections.singletonList(D)));
     }
 
+    // Asegurar que esto funciona correctamente!!!!!!!
+    @Test
+    public void testSimmetryBetweenXandY() {
+        Node A = node("A"), B = node("B"), C = node("C"), D = node("D");
+        Dag dag = createDag(Edges.directedEdge(A, B), Edges.directedEdge(C, A), Edges.directedEdge(D, A));
+        List<Node> conditioning = Collections.emptyList();
+        
+        // No colliders between A and B, so they are not d-separated
+        assertFalse(Utils.dSeparated(dag, A, B, conditioning));
+        assertFalse(Utils.dSeparated(dag, B, A, conditioning));
+
+        // C->A and D->A makes A a collider for C and D, and therefore C and D are d-separated from each other
+        assertTrue(Utils.dSeparated(dag, C, D, conditioning));
+        assertTrue(Utils.dSeparated(dag, D, C, conditioning));
+        
+    }
+
     //find naYX tests
 
     @Test
