@@ -115,7 +115,7 @@ public class HeuristicConsensusBES {
 //		                List<Set<Node>> hSubsets = powerSet(hNeighbors);
 				PowerSet hSubsets= PowerSetFabric.getPowerSet(_x,_y,hNeighbors);
 				while(hSubsets.hasMoreElements()) {
-					SubSet hSubset=hSubsets.nextElement();
+					HashSet<Node> hSubset=hSubsets.nextElement();
 					if(hSubset.size() > maxSize) break;
 					double deleteEval = deleteEval(_x, _y, hSubset, graph);
 					if (!(deleteEval >= this.percentage)) deleteEval = 0.0;
@@ -248,7 +248,7 @@ public class HeuristicConsensusBES {
 	}
 	
 	
-	double deleteEval(Node x, Node y, SubSet h, Graph graph){
+	double deleteEval(Node x, Node y, HashSet<Node> h, Graph graph){
 		
 		 Set<Node> set1 = new HashSet<Node>(Utils.findNaYX(x, y, graph));
 	        set1.removeAll(h);

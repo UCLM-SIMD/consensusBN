@@ -128,7 +128,7 @@ public class BackwardEquivalenceSearchDSep {
 				PowerSet hSubsets= PowerSetFabric.getPowerSet(candidateTail,candidateHead,hNeighbors);
 
 				while(hSubsets.hasMoreElements()) {
-					SubSet hSubset=hSubsets.nextElement();
+					HashSet<Node> hSubset=hSubsets.nextElement();
 
 					// Checking if {naYXH} \ {hSubset} is a clique
 					List<Node> naYXH = findNaYX(candidateTail, candidateHead, graph);
@@ -226,8 +226,8 @@ public class BackwardEquivalenceSearchDSep {
 			PowerSet hSubsets= PowerSetFabric.getPowerSet(candidateTail,candidateHead,hNeighbors);
 
 			while(hSubsets.hasMoreElements()) {
-				// Getting a subset of hNeighbors
-				SubSet hSubset=hSubsets.nextElement();
+				// Getting a HashSet<Node> of hNeighbors
+				HashSet<Node> hSubset=hSubsets.nextElement();
 				
 				// Checking if {naYXH} \ {hSubset} is a clique
 				List<Node> naYXH = Utils.findNaYX(candidateTail, candidateHead, graph);
@@ -374,7 +374,7 @@ public class BackwardEquivalenceSearchDSep {
 
 	/**
 	 * Applies the delete operation from Chickering 2002 for the edge x->y in the graph, and updates the edges
-	 * connecting x and y to the nodes in the provided subset. This is done to ensure that the same dependency structure is maintained
+	 * connecting x and y to the nodes in the provided HashSet<Node>. This is done to ensure that the same dependency structure is maintained
 	 * while removing the edge between x and y.
 	 * @param tailNode The tail node of the edge to be deleted.
 	 * @param headNode The head node of the edge to be deleted.
@@ -408,7 +408,7 @@ public class BackwardEquivalenceSearchDSep {
 	 * @param graph The graph in which the change is being evaluated.
 	 * @return The score resulting from deleting the edge, based on the given context.
 	 */
-    private double deleteEval(Node x, Node y, SubSet conditioningSet, Graph graph){
+    private double deleteEval(Node x, Node y, HashSet<Node> conditioningSet, Graph graph){
 		// Setup the conditioning set for d-separation by removing the conditioning nodes from the naYX set, adding the parents of y and removing x.
 		Set<Node> finalConditioningSet = new HashSet<>(Utils.findNaYX(x, y, graph));
 		finalConditioningSet.removeAll(conditioningSet);
