@@ -3,6 +3,7 @@ package es.uclm.i3a.simd.consensusBN;
 import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
@@ -67,11 +68,42 @@ public class TransformDagsTest {
     }
 
     @Test
-    public void testConstructorInitializesCorrectly() {
+    public void testConstructorGettersAndSetters() {
         TransformDags transformer = new TransformDags(inputDags, alpha);
-
+        ArrayList<BetaToAlpha> empytBetas = new ArrayList<>();
+        
         assertNotNull(transformer);
         assertEquals(0, transformer.getNumberOfInsertedEdges());
+        
+        // GetSetOfOutputDags
+        ArrayList<Dag> outputDags = transformer.getSetOfOutputDags();
+        assertNotNull(outputDags);
+        assertTrue(outputDags.isEmpty());
+        transformer.transform();
+        outputDags = transformer.getSetOfOutputDags();
+        assertNotNull(outputDags);
+        assertEquals(inputDags.size(), outputDags.size());
+        assertNotEquals(inputDags, outputDags);  
+
+        // Testing setTransformers and getTransformers
+        ArrayList<BetaToAlpha> betas = transformer.getTransformers();
+        assertNotNull(betas);
+        assertTrue(!betas.isEmpty());
+        transformer.setTransformers(empytBetas);
+        assertEquals(empytBetas, transformer.getTransformers());
+        assertTrue(transformer.getTransformers().isEmpty());
+
+        // GetAlphaOrder
+        ArrayList<Node> alphaOrder = transformer.getAlpha();
+        assertNotNull(alphaOrder);
+        assertEquals(alpha, alphaOrder);
+
+        // GetSetOfDags
+        ArrayList<Dag> dags = transformer.getSetOfDags();
+        assertNotNull(dags);
+        assertEquals(inputDags, dags);
+
+  
     }
 
     @Test
@@ -101,4 +133,5 @@ public class TransformDagsTest {
         assertTrue(result.isEmpty());
         assertEquals(0, transformer.getNumberOfInsertedEdges());
     }
+
 }
