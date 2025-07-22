@@ -14,12 +14,33 @@ import edu.cmu.tetrad.graph.Node;
  * It implements Enumeration to allow iteration over the subsets.
  */
 public class PowerSet implements Enumeration<Set<Node>> {
-	
+	/**
+	 * List of nodes for which the power set is generated.
+	 */
 	List<Node> nodes;
+	/**
+	 * List to store the generated subsets.
+	 */
 	private final List<Set<Node>> subSets = new ArrayList<>();
+	/**
+	 * Index to track the current position in the enumeration.
+	 */
 	private int index;
-	private int[] list;
+	/**
+	 * List of integers representing the subsets in binary form.
+	 */
+	private int[] binaryList;
+
+	/**
+	 * A map to store the subsets with their corresponding binary representation.
+	 * The key is the binary representation of the subset, and the value is the subset itself.
+	 */
 	private HashMap<Integer,Set<Node>> subset;
+
+	/**
+	 * Maximum size of the subsets to be generated.
+	 * If set to a value less than the number of nodes, it limits the size of the subsets.
+	 */
 	private static int maxPow = 0;
 	
 	/**
@@ -34,7 +55,7 @@ public class PowerSet implements Enumeration<Set<Node>> {
 		if (maxSize < 0) {
 			throw new IllegalArgumentException("maxSize cannot be negative");
 		}
-        if (nodes.size() <= maxSize) {
+        if (maxSize >= nodes.size()) {
             maxSize = nodes.size();
         }
         this.nodes = nodes;
@@ -64,9 +85,9 @@ public class PowerSet implements Enumeration<Set<Node>> {
 	private void initializeSubsets(int maxSize) {
         subset = new HashMap<>();
         index = 0;
-        list = ListFabric.generateList(nodes.size());
+        binaryList = ListFabric.generateList(nodes.size());
 
-        for (int i : list) {
+        for (int i : binaryList) {
             Set<Node> newSubSet = new HashSet<>();
             String selection = Integer.toBinaryString(i);
 
