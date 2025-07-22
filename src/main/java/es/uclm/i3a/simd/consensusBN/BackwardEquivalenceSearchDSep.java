@@ -223,11 +223,11 @@ public class BackwardEquivalenceSearchDSep {
 			Node candidateHead = Edges.getDirectedEdgeHead(edge);
 
 			List<Node> hNeighbors = getHNeighbors(candidateTail, candidateHead, graph);
-			PowerSet hSubsets= PowerSetFabric.getPowerSet(candidateTail,candidateHead,hNeighbors);
+			PowerSet hSubsets= new PowerSet(hNeighbors);//PowerSetFabric.getPowerSet(candidateTail,candidateHead,hNeighbors);
 
 			while(hSubsets.hasMoreElements()) {
 				// Getting a HashSet<Node> of hNeighbors
-				HashSet<Node> hSubset=hSubsets.nextElement();
+				Set<Node> hSubset=hSubsets.nextElement();
 				
 				// Checking if {naYXH} \ {hSubset} is a clique
 				List<Node> naYXH = Utils.findNaYX(candidateTail, candidateHead, graph);
@@ -279,9 +279,9 @@ public class BackwardEquivalenceSearchDSep {
 		bestScore = bestCandidate.score;
 
 		// Applying delete
-		System.out.println(" ");
-		System.out.println("DELETE " + graph.getEdge(bestTail, bestHead) + bestSetParents.toString() + " (" +bestScore + ")");
-		System.out.println(" ");
+		//System.out.println(" ");
+		//System.out.println("DELETE " + graph.getEdge(bestTail, bestHead) + bestSetParents.toString() + " (" +bestScore + ")");
+		//System.out.println(" ");
 		delete(bestTail, bestHead, bestSetParents, graph);
 		
 		// Rebuilding the pattern after deleting the edge
@@ -408,7 +408,7 @@ public class BackwardEquivalenceSearchDSep {
 	 * @param graph The graph in which the change is being evaluated.
 	 * @return The score resulting from deleting the edge, based on the given context.
 	 */
-    private double deleteEval(Node x, Node y, HashSet<Node> conditioningSet, Graph graph){
+    private double deleteEval(Node x, Node y, Set<Node> conditioningSet, Graph graph){
 		// Setup the conditioning set for d-separation by removing the conditioning nodes from the naYX set, adding the parents of y and removing x.
 		Set<Node> finalConditioningSet = new HashSet<>(Utils.findNaYX(x, y, graph));
 		finalConditioningSet.removeAll(conditioningSet);
