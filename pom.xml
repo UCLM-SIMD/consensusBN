@@ -161,6 +161,11 @@
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
           <version>0.8.10</version>
+          <configuration>
+            <excludes>
+              <exclude>**/RandomBN.class</exclude>
+            </excludes>
+          </configuration>
           <executions>
             <execution>
               <goals>

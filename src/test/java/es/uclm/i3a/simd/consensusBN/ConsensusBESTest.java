@@ -102,14 +102,20 @@ public class ConsensusBESTest {
 
     @Test
     public void testRandomBNFusion(){
-        // (seed, n. variables, n egdes max, n.dags, mutation(n. de operaciones))
-		RandomBN setOfDags = new RandomBN(0, 20, 50,
-				4,3);
-		setOfDags.setMaxInDegree(4);
-		setOfDags.setMaxOutDegree(4);
-		setOfDags.generate();
+        // Creating random DAGs
+        ArrayList<Dag> randomDagsList = new ArrayList<>();
+        randomDagsList.addAll(GraphTestHelper.generateRandomDagList(20, 2, 50, 19, 19, 19, true,0));
 
-    	ConsensusBES conDag = new ConsensusBES(setOfDags.setOfRandomDags);
+        // Creating ConsensusUnion instance
+        ConsensusUnion consensusUnionOnly = new ConsensusUnion(randomDagsList);
+        Dag unionDagOnly = consensusUnionOnly.union();
+
+        assertNotNull(unionDagOnly);
+        assertTrue(unionDagOnly.getNumEdges() >= 0);
+        assertTrue(unionDagOnly.getNodes().size() == randomDagsList.get(0).getNodes().size());
+        
+
+    	ConsensusBES conDag = new ConsensusBES(randomDagsList);
     	conDag.fusion();
     	Dag besDag = conDag.getFusionDag();
         Dag unionDag = conDag.getUnion();
@@ -120,6 +126,7 @@ public class ConsensusBESTest {
         assertNotNull(besDag);
         assertNotNull(unionDag);
         assertNotNull(consensusUnion);
+        assertEquals(unionDagOnly, unionDag);
         assertEquals(besDag.getNodes().size(), unionDag.getNodes().size());
         assert consensusNumberOfInsertedEdges >= 0;
         assert consensusNumberOfInsertedEdges >= totalNumberOfInsertedEdges;        

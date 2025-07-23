@@ -12,6 +12,8 @@ import edu.cmu.tetrad.graph.Dag;
 import edu.cmu.tetrad.graph.Graph;
 import edu.cmu.tetrad.graph.GraphNode;
 import edu.cmu.tetrad.graph.Node;
+import edu.cmu.tetrad.graph.RandomGraph;
+import edu.cmu.tetrad.util.RandomUtil;
 
 public class ConsensusUnionTest {
 
@@ -117,22 +119,33 @@ public class ConsensusUnionTest {
 
     @Test
     public void testRandomBNGeneratesConsensusUnionCorrectly() {
+        ArrayList<Dag> randomDagsList = new ArrayList<>();
+        int sizeRandomDags = 2;
+        int numVariables = 20;
 
-		//System.out.println("Grafos de Partida:   ");
+        // Creating list of shared nodes
+        ArrayList<Node> sharedNodes = new ArrayList<>();
+        for (int i = 0; i < numVariables; i++) {
+            Node node = new GraphNode("Node" + i);
+            sharedNodes.add(node);
+        }
+        // Setting seed
+        RandomUtil.getInstance().setSeed(42);
 
-		// (seed, n. variables, n egdes aprox, n. dags, mutation)
-		RandomBN setOfDags = new RandomBN(0, 20, 50,
-				4,3);
-		setOfDags.generate();
+        // Generating random DAGs
+        for (int i = 0; i < sizeRandomDags; i++) {
+            Dag randomDag = RandomGraph.randomDag(sharedNodes,0,50,19,19,19,true);
+            randomDagsList.add(randomDag);
+        }
 
-		//for( Dag g: setOfDags.setOfRandomDags) System.out.print(g);
-		ConsensusUnion conDag= new ConsensusUnion(setOfDags.setOfRandomDags);
-		Graph g = conDag.union();
-		//System.out.println("grafo consenso: "+ g);
-
+		// Applying ConsensusUnion
+        ConsensusUnion conDag = new ConsensusUnion(randomDagsList);
+        Graph g = conDag.union();
+		
+        // Validating the resulting consensus DAG
         assertNotNull(g);
         assertTrue(g.getNumEdges() >= 0);
-        assertTrue(g.getNodes().size() == setOfDags.setOfRandomDags.get(0).getNodes().size());
-		
+        assertTrue(g.getNodes().size() == randomDagsList.get(0).getNodes().size());
+        
     } 
 }

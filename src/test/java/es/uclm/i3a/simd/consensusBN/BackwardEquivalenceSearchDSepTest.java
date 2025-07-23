@@ -18,13 +18,9 @@ class BackwardEquivalenceSearchDSepTest {
 
 
     private ArrayList<Dag> createRandomDagList(int copies) {
-        RandomBN setOfDags = new RandomBN(0, 20, 50,
-				copies,3);
-		setOfDags.setMaxInDegree(4);
-		setOfDags.setMaxOutDegree(4);
-		setOfDags.generate();
-
-        return setOfDags.setOfRandomDags;
+        ArrayList<Dag> setOfDags = new ArrayList<>();
+        setOfDags.addAll(GraphTestHelper.generateRandomDagList(20, copies, 50, 49, 49, 49, true, 0));
+        return setOfDags;
     }
 
     @Test
