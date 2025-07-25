@@ -1,9 +1,7 @@
 package es.uclm.i3a.simd.consensusBN;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import edu.cmu.tetrad.graph.Dag;
 import edu.cmu.tetrad.graph.Node;
@@ -59,12 +57,7 @@ public class ConsensusBES implements Runnable {
 	 */
 	int numberOfInsertedEdges = 0;
 	
-	/**
-	 * Local score map used to store the scores of graph changes during the Backward Equivalence Search.
-	 * The key is a string representation of the nodes and their conditioning set, and the value is the score associated with that configuration.
-	 */
-	private final Map<String, Double> localScore = new HashMap<>();
-	
+
 	/**
 	 * Constructor for ConsensusBES that initializes the union process with a list of DAGs.
 	 * It creates an instance of ConsensusUnion to compute the consensus DAG.
@@ -155,6 +148,11 @@ public class ConsensusBES implements Runnable {
 		}
 	}
 
+	/**
+	 * Returns the list of input DAGs used in this ConsensusBES.
+	 * This method retrieves the original DAGs that were provided to the ConsensusBES constructor.
+	 * @return the list of input DAGs.
+	 */
 	public ArrayList<Dag> getInputDags() {
 		return this.inputDags;
 	}
