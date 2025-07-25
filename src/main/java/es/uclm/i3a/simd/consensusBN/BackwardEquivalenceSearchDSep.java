@@ -84,6 +84,16 @@ public class BackwardEquivalenceSearchDSep {
     private int numberOfRemovedEdges = 0;
 
 	/**
+	 * Percentage threshold for edge deletion. By default, it is set to 1.0, set to another value for an heuristic search
+	 */
+	private double percentage = 1.0;
+
+	/**
+	 * Maximum size of the conditioning set for edge deletion. Set to Integer.MAX_VALUE by default. Another value can be set for an heuristic search.
+	 */
+	private int maxSize = Integer.MAX_VALUE;
+
+	/**
 	 * Constructor for BackwardEquivalenceSearchDSep that initializes the properties for the search with a union DAG and lists of initial and transformed DAGs.
 	 * 
 	 * @param union The resulting union DAG from the ConsensusUnion process.
@@ -166,7 +176,6 @@ public class BackwardEquivalenceSearchDSep {
 		// Rebuild the pattern to ensure the final graph is a DAG		
 		createOutputDag();
 
-
         return outputDag;
     }
 
@@ -229,6 +238,11 @@ public class BackwardEquivalenceSearchDSep {
 				// Getting a HashSet<Node> of hNeighbors
 				Set<Node> hSubset=hSubsets.nextElement();
 				
+				// Checking size of hSubset
+				if (hSubset.size() > maxSize) {
+					break; // Skip to next edge if the size exceeds the maximum allowed size
+				}
+
 				// Checking if {naYXH} \ {hSubset} is a clique
 				List<Node> naYXH = Utils.findNaYX(candidateTail, candidateHead, graph);
 				naYXH.removeAll(hSubset);
@@ -240,7 +254,7 @@ public class BackwardEquivalenceSearchDSep {
 				double deleteEval = deleteEval(candidateTail, candidateHead, hSubset, graph);
 				
 				// Setting limit for deleteEval
-				if (!(deleteEval >= 1.0)) deleteEval = 0.0;
+				if (deleteEval < percentage) deleteEval = 0.0;
 
 				// If the score is not better than the best score, continue
 				double evalScore = score + deleteEval;
@@ -446,15 +460,16 @@ public class BackwardEquivalenceSearchDSep {
 		}
 
 		// Evaluating the d-separation condition across all initial DAGs
+		double eval = 0.0;
 		for (Dag g : this.initialDags) {
-			if (!Utils.dSeparated(g, x, y, new ArrayList<>(conditioningSet))) {
-				localScore.put(key, 0.0);
-				return 0.0;
+			if (Utils.dSeparated(g, x, y, new ArrayList<>(conditioningSet))) {
+				eval++;
 			}
 		}
+		eval = eval / (double) this.initialDags.size();
 
-		localScore.put(key, 1.0);
-		return 1.0;
+		localScore.put(key, eval);
+		return eval;
 	}
 	/**
 	 * Returns the number of edges that were inserted during the consensus union and backward equivalence search process.
@@ -463,6 +478,25 @@ public class BackwardEquivalenceSearchDSep {
 	public int getNumberOfRemovedEdges() {
 		return this.numberOfRemovedEdges;
 	}
+
+	public void setPercentage(double percentage) {
+		if(percentage < 0.0 || percentage > 1.0) {
+			throw new IllegalArgumentException("Percentage must be between 0.0 and 1.0");
+		}
+		this.percentage = percentage;
+	}
+	public void setMaxSize(int maxSize) {
+		if(maxSize < 0) {
+			throw new IllegalArgumentException("Max size must be a non-negative integer");
+		}
+		this.maxSize = maxSize;
+	}
+	public double getPercentage() {
+		return this.percentage;
+	}
+	public int getMaxSize() {
+		return this.maxSize;
+	}	
 
 	/**
 	 * Class representing a candidate edge for deletion in the Backward Equivalence Search.

@@ -118,7 +118,7 @@ public class HeuristicConsensusBES {
 					Set<Node> hSubset=hSubsets.nextElement();
 					if(hSubset.size() > maxSize) break;
 					double deleteEval = deleteEval(_x, _y, hSubset, graph);
-					if (!(deleteEval >= this.percentage)) deleteEval = 0.0;
+					if (deleteEval < this.percentage) deleteEval = 0.0;
 					double evalScore = score + deleteEval;
 
              //       System.out.println("Attempt removing " + _x + "-->" + _y + "(" +evalScore + ") "+ hSubset.toString());

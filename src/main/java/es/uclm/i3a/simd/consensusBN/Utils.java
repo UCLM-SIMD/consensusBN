@@ -53,7 +53,7 @@ public class Utils {
             for(Node node : nodes){
                 x = node;
                 //Checking if the node has no outgoing edges
-                if(graphAux.getChildren(node).size() != 0)
+                if(!graphAux.getChildren(node).isEmpty())
                     continue;
                 //Checking if the neighbors form a clique
                 if(!GraphUtils.isClique(graphAux.getAdjacentNodes(x), graphAux))
@@ -70,7 +70,7 @@ public class Utils {
                 break; // We break the loop to start again with the new graphAux without the removed node.
             }
             nodes.remove(x);
-        }while(nodes.size() > 0);
+        }while(!nodes.isEmpty());
     }
 
 

@@ -77,9 +77,9 @@ public class PowerSetTest {
     }
 
     @Test
-    public void testMaxPowerSetSizeStatic() {
-        new PowerSet(nodeList); // Esto actualiza el valor de maxPow
-        assertEquals(8L, PowerSet.maxPowerSetSize());
+    public void testMaxPowerSetSize() {
+        PowerSet powerSet = new PowerSet(nodeList); // Esto actualiza el valor de maxPow
+        assertEquals(8L, powerSet.maxPowerSetSize());
     }
 
     @Test

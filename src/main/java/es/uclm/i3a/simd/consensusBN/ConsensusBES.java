@@ -24,7 +24,7 @@ public class ConsensusBES implements Runnable {
 	 * @see ConsensusUnion
 	 * @see BackwardEquivalenceSearchDSepTest
 	 */
-	private Dag outputDag;
+	protected Dag outputDag;
 
 	/**
 	 * Instance of ConsensusUnion used to compute the consensus DAG from the input DAGs.
@@ -153,6 +153,10 @@ public class ConsensusBES implements Runnable {
 		} else {
 			throw new IllegalStateException("Transformed DAGs have not been initialized. Please call fusion() first.");
 		}
+	}
+
+	public ArrayList<Dag> getInputDags() {
+		return this.inputDags;
 	}
 	
 	/**

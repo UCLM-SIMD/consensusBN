@@ -41,7 +41,7 @@ public class PowerSet implements Enumeration<Set<Node>> {
 	 * Maximum size of the subsets to be generated.
 	 * If set to a value less than the number of nodes, it limits the size of the subsets.
 	 */
-	private static int maxPow = 0;
+	private int maxPow = 0;
 	
 	/**
 	 * Builds a PowerSet with subsets of the given nodes, limited to a maximum size.
@@ -136,7 +136,7 @@ public class PowerSet implements Enumeration<Set<Node>> {
 	 * This method calculates the size of the power set as 2 raised to the power of the maximum number of nodes.
 	 * @return The maximum size of the power set.
 	 */
-	public static long maxPowerSetSize() {
+	public long maxPowerSetSize() {
 		return (long) Math.pow(2,maxPow);
 	}
 }
