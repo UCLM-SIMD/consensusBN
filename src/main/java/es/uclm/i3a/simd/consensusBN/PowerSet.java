@@ -116,7 +116,7 @@ public class PowerSet implements Enumeration<Set<Node>> {
 
 	/**
 	 * Returns the next subset in the enumeration.
-	 * @return The next subset as a Set<Node>.
+	 * @return The next subset of the power set of nodes.
 	 */
 	@Override
 	public Set<Node> nextElement() {

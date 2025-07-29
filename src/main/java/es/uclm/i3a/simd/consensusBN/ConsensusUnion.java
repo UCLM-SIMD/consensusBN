@@ -163,6 +163,10 @@ public class ConsensusUnion implements Runnable{
 		this.union = this.union();
 	}
 
+	/**
+	 * Returns the list of transformed DAGs after applying the alpha order to the input DAGs with TransformDags.
+	 * @return the list of transformed DAGs.
+	 */
 	public ArrayList<Dag> getTransformedDags() {
 		if (this.imaps2alpha != null) {
 			return this.imaps2alpha.getSetOfOutputDags();

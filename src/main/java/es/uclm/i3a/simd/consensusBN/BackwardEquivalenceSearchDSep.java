@@ -473,27 +473,53 @@ public class BackwardEquivalenceSearchDSep {
 	}
 	/**
 	 * Returns the number of edges that were inserted during the consensus union and backward equivalence search process.
-	 * @return
+	 * @return The number of edges that were removed during the backward equivalence search process.
 	 */
 	public int getNumberOfRemovedEdges() {
 		return this.numberOfRemovedEdges;
 	}
-
+	/**
+	 * Sets the percentage threshold for edge deletion.
+	 * This method allows the user to specify a percentage threshold for edge deletion, for an heuristic search.
+	 * The percentage must be between 0.0 and 1.0, where 0.0 means no edges are deleted and 1.0 means all edges are considered for deletion.
+	 * If the percentage is outside this range, an IllegalArgumentException is thrown.
+	 * @param percentage The percentage threshold for edge deletion, must be between 0.0 and 1.0.
+	 * @throws IllegalArgumentException if the percentage is not between 0.0 and 1.0.
+	 */
 	public void setPercentage(double percentage) {
 		if(percentage < 0.0 || percentage > 1.0) {
 			throw new IllegalArgumentException("Percentage must be between 0.0 and 1.0");
 		}
 		this.percentage = percentage;
 	}
+
+	/**
+	 * Sets the maximum size of the conditioning set for edge deletion.
+	 * This method allows the user to specify a maximum size for the conditioning set used in edge deletion for an heuristic search.
+	 * The maximum size must be a non-negative integer. If it is negative, an IllegalArgumentException is thrown.
+	 * @param maxSize The maximum size of the conditioning set.
+	 */
 	public void setMaxSize(int maxSize) {
 		if(maxSize < 0) {
 			throw new IllegalArgumentException("Max size must be a non-negative integer");
 		}
 		this.maxSize = maxSize;
 	}
+
+	/**
+	 * Returns the percentage threshold for edge deletion.
+	 * This method retrieves the current percentage threshold set for edge deletion.
+	 * @return The percentage threshold for edge deletion.
+	 */
 	public double getPercentage() {
 		return this.percentage;
 	}
+
+	/**
+	 * Returns the maximum size of the conditioning set for edge deletion.
+	 * This method retrieves the current maximum size set for the conditioning set used in edge deletion.
+	 * @return The maximum size of the conditioning set for edge deletion.
+	 */
 	public int getMaxSize() {
 		return this.maxSize;
 	}	

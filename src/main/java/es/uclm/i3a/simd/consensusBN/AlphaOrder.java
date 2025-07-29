@@ -83,7 +83,7 @@ public class AlphaOrder {
 	
 	/**
 	 * Returns the nodes of the first DAG in the set, since all DAGs are assumed to have the same nodes.
-	 * @return
+	 * @return the nodes of the first DAG.
 	 */
 	public List<Node> getNodes(){
 		return(setOfDags.get(0).getNodes());

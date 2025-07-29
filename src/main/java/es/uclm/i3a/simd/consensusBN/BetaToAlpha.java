@@ -20,7 +20,7 @@ public class BetaToAlpha {
 	/**
 	 * The directed acyclic graph (DAG) to be transformed.
 	 */
-	private final Dag G;
+	private final Dag dag;
 
 	/**
 	 * The beta order derived from the alpha order.
@@ -50,12 +50,12 @@ public class BetaToAlpha {
 	
 	/**
 	 * Constructor for BetaToAlpha that initializes the graph and alpha order.
-	 * @param G the directed acyclic graph (DAG) to be transformed.
+	 * @param dag the directed acyclic graph (DAG) to be transformed.
 	 * @param alpha the alpha order that the graph should respect.
 	 */
-	public BetaToAlpha(Dag G, ArrayList<Node> alpha){
+	public BetaToAlpha(Dag dag, ArrayList<Node> alpha){
 		this.alpha = alpha;
-		this.G = G;
+		this.dag = dag;
 		this.beta = null;
 		for(int i= 0; i< alpha.size(); i++){
 			Node n = alpha.get(i);
@@ -66,12 +66,12 @@ public class BetaToAlpha {
 	
 	/**
 	 * Constructor for BetaToAlpha that initializes the graph without a specified alpha order.
-	 * A random alpha order will need to be created.
-	 * @param G
+	 * A random alpha order will be created instead.
+	 * @param dag the directed acyclic graph (DAG) to be transformed.
 	 */
-	public BetaToAlpha(Dag G){
+	public BetaToAlpha(Dag dag){
 		this.alpha = null;
-		this.G = G;
+		this.dag = dag;
 		this.beta = null;
 	}
 
@@ -99,12 +99,12 @@ public class BetaToAlpha {
 	
 	/**
 	 * Builds a random alpha order from the nodes of the graph. This is used for test purposes to ensure that the transformation can handle different orders.
-	 * @param aleatorio the random number generator to use for shuffling the nodes.
+	 * @param randomGenerator the random number generator to use for shuffling the nodes.
 	 * @return a list of nodes representing a random alpha order.
 	 */
-	public List<Node> randomAlfa (Random aleatorio){
-		
-		List<Node> nodes = this.G.getNodes();
+	public List<Node> randomAlpha (Random randomGenerator){
+
+		List<Node> nodes = this.dag.getNodes();
 		this.alpha = new ArrayList<>();
 
 		int[] index = new int[nodes.size()];
@@ -114,9 +114,8 @@ public class BetaToAlpha {
 		}
 
 		for (int j = 0; j < nodes.size(); j++){
-
-			int indi = aleatorio.nextInt(nodes.size());
-			int indj = aleatorio.nextInt(nodes.size());
+			int indi = randomGenerator.nextInt(nodes.size());
+			int indj = randomGenerator.nextInt(nodes.size());
 			int sw = index[indi];
 			index[indi] = index[indj];
 			index[indj] = sw;
@@ -152,7 +151,7 @@ public class BetaToAlpha {
 	 * It also initializes the beta list with the first sink node and iteratively adds nodes to the beta order based on their relationships in the graph.
 	 */
 	private void buildBetaOrder() {
-		this.G_aux = new Dag(this.G);
+		this.G_aux = new Dag(this.dag);
 		this.beta = new ArrayList<>();
 		List<Node> parents;
 
@@ -181,7 +180,7 @@ public class BetaToAlpha {
 			for (; insertIndex < beta.size(); insertIndex++) {
 				Node current = beta.get(insertIndex);
 				if (alphaHash.get(current) > alphaHash.get(sink)) break;
-				if (G.getParents(current).contains(sink)) break;
+				if (dag.getParents(current).contains(sink)) break;
 			}
 			beta.add(insertIndex, sink);
 		}
@@ -238,23 +237,23 @@ public class BetaToAlpha {
 
 				// Check if there is an edge from nodeZ to nodeY, if so, cover it.
 				if ((nodeZ != null) && (this.alphaHash.get(nodeZ) > this.alphaHash.get(nodeY))){
-					if(this.G.getEdge(nodeZ, nodeY) != null){
-						List<Node> paZ = this.G.getParents(nodeZ);
-						List<Node> paY = this.G.getParents(nodeY);
+					if(this.dag.getEdge(nodeZ, nodeY) != null){
+						List<Node> paZ = this.dag.getParents(nodeZ);
+						List<Node> paY = this.dag.getParents(nodeY);
 						paY.remove(nodeZ);
-						this.G.removeEdge(nodeZ, nodeY);
-						this.G.addEdge(new Edge(nodeY,nodeZ,Endpoint.TAIL, Endpoint.ARROW));
+						this.dag.removeEdge(nodeZ, nodeY);
+						this.dag.addEdge(new Edge(nodeY,nodeZ,Endpoint.TAIL, Endpoint.ARROW));
 						for(Node nodep: paZ){
-							Edge pay = this.G.getEdge(nodep, nodeY);
+							Edge pay = this.dag.getEdge(nodep, nodeY);
 							if(pay == null){
-								this.G.addEdge(new Edge(nodep,nodeY,Endpoint.TAIL,Endpoint.ARROW));
+								this.dag.addEdge(new Edge(nodep,nodeY,Endpoint.TAIL,Endpoint.ARROW));
 								this.numberOfInsertedEdges++;
 							}
 						}
 						for(Node nodep : paY){
-							Edge paz = this.G.getEdge(nodep,nodeZ);
+							Edge paz = this.dag.getEdge(nodep,nodeZ);
 							if(paz == null){
-								this.G.addEdge(new Edge(nodep,nodeZ,Endpoint.TAIL,Endpoint.ARROW));
+								this.dag.addEdge(new Edge(nodep,nodeZ,Endpoint.TAIL,Endpoint.ARROW));
 								this.numberOfInsertedEdges++;
 							}
 						}
@@ -271,7 +270,8 @@ public class BetaToAlpha {
 	/**
 	 * Returns the number of edges that were inserted during the transformation process.
 	 * This method is useful for understanding how many modifications were made to the original graph to achieve the desired alpha order.
-	 * @return
+	 * @return the number of edges that were inserted during the transformation process.
+	 * @see BetaToAlpha#transform()
 	 */
 	public int getNumberOfInsertedEdges(){
 		return this.numberOfInsertedEdges;
@@ -282,16 +282,16 @@ public class BetaToAlpha {
 	 * A sink node is defined as a node that does not have any children in the graph.
 	 * This method iterates through all nodes in the graph and checks their children to determine if they are sink nodes.
 	 * 
-	 * @param g the directed acyclic graph (DAG) from which to retrieve sink nodes.
+	 * @param dagGraph the directed acyclic graph (DAG) from which to retrieve sink nodes.
 	 * @return an ArrayList of sink nodes that do not have any children in the graph.
 	 */
-	private ArrayList<Node> getSinkNodes(Dag g){
+	private ArrayList<Node> getSinkNodes(Dag dagGraph){
 		// Get nodes from DAG
 		ArrayList<Node> sinkNodes = new ArrayList<>();
-		List<Node> nodes = g.getNodes();
+		List<Node> nodes = dagGraph.getNodes();
 		// Check which nodes don't have children and add them to sinkNodes
 		for (Node node : nodes){
-			if(g.getChildren(node).isEmpty()){
+			if(dagGraph.getChildren(node).isEmpty()){
 				sinkNodes.add(node);
 			}
 		}
@@ -336,7 +336,7 @@ public class BetaToAlpha {
 	 * @return the transformed directed acyclic graph (DAG) as a Dag object.
 	 */
 	public Dag getGraph() {
-		return G;
+		return dag;
 	}
 
 			

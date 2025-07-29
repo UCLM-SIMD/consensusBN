@@ -69,7 +69,7 @@ public class BetaToAlphaTest {
     @Test
     void testRandomAlphaProducesPermutation() {
         BetaToAlpha bta = new BetaToAlpha(dag);
-        List<Node> randomAlpha = bta.randomAlfa(new Random(42));
+        List<Node> randomAlpha = bta.randomAlpha(new Random(42));
 
         assertNotNull(randomAlpha);
         assertEquals(dag.getNumNodes(), randomAlpha.size());

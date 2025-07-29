@@ -74,8 +74,8 @@ public class HeuristicConsensusMVoting {
 	/**
 	 * Constructor for HeuristicConsensusMVoting.
 	 * Initializes the variables, output DAG, input DAGs, and weight matrix.
-	 * @param setOfdags
-	 * @param percentage
+	 * @param setOfdags the list of input DAGs to be fused.
+	 * @param percentage the percentage threshold for edge inclusion in the consensus DAG.
 	 */
 	public HeuristicConsensusMVoting(ArrayList<Dag> setOfdags, double percentage) {
 			this.variables = (ArrayList<Node>) setOfdags.get(0).getNodes();

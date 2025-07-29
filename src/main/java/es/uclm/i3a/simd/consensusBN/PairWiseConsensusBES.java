@@ -48,8 +48,8 @@ public class PairWiseConsensusBES implements Runnable{
 	 * Constructor for the PairWiseConsensusBES class.
 	 * It initializes the instance with two input DAGs and checks if they are valid.
 	 * If the input DAGs are not valid, it throws an IllegalArgumentException.
-	 * @param firstDag
-	 * @param secondDag
+	 * @param firstDag the first input DAG for fusion similarity.
+	 * @param secondDag the second input DAG for fusion similarity.
 	 */
 	public PairWiseConsensusBES(Dag firstDag, Dag secondDag) {
 		checkInput(firstDag, secondDag);
@@ -60,8 +60,8 @@ public class PairWiseConsensusBES implements Runnable{
 	 * Checks if the input DAGs are valid.
 	 * Validity is determined by ensuring that the DAGs are not null, contain at least one node and one edge, and have the same set of nodes.
 	 * If any of these conditions are not met, an IllegalArgumentException is thrown.
-	 * @param firstDag first input DAG
-	 * @param secondDag second input DAG
+	 * @param firstDag first input DAG for fusion similarity
+	 * @param secondDag second input DAG for fusion similarity
 	 * @throws IllegalArgumentException if the input DAGs are not valid
 	 */
 	private void checkInput(Dag firstDag, Dag secondDag) {
@@ -103,7 +103,7 @@ public class PairWiseConsensusBES implements Runnable{
 	 * Returns the number of edges inserted during the fusion process.
 	 * This method retrieves the number of edges that were added to the consensus DAG during the fusion process.
 	 * It is useful for understanding how many edges were introduced in the consensus DAG compared to the original input DAGs.
-	 * @return
+	 * @return the number of edges inserted during the fusion process.
 	 */
 	public int getNumberOfInsertedEdges(){
 		return this.numberOfInsertedEdges;
@@ -117,7 +117,7 @@ public class PairWiseConsensusBES implements Runnable{
 	 * 
 	 * @see ConsensusBES#getUnion()
 	 * @see ConsensusBES#getNumberOfInsertedEdges()
-	 * @return
+	 * @return the number of edges in the union DAG after the consensus union process.
 	 */
 	public int getNumberOfUnionEdges(){
 		return this.numberOfUnionEdges;
@@ -148,7 +148,7 @@ public class PairWiseConsensusBES implements Runnable{
 	 * It is useful for obtaining the consensus structure after the fusion process has been completed.
 	 * 
 	 * @see ConsensusBES#getFusionDag()
-	 * @return
+	 * @return the resulting consensus DAG after applying the whole fusion process.
 	 */
 	public Dag getDagFusion(){
 		return this.consensusDAG;

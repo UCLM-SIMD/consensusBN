@@ -18,9 +18,8 @@ public class ConsensusBES implements Runnable {
 	 * Final output DAG after applying the Consensus Union and Backward Equivalence Search with D-separation.
 	 * This DAG represents the optimal fusion of the input DAGs.
 	 * It is computed by first merging the input DAGs into a consensus DAG and then refining it using the BES with D-separation.
-	 * 
 	 * @see ConsensusUnion
-	 * @see BackwardEquivalenceSearchDSepTest
+	 * @see BackwardEquivalenceSearchDSep
 	 */
 	protected Dag outputDag;
 
@@ -104,7 +103,7 @@ public class ConsensusBES implements Runnable {
     
 	/**
 	 * Returns a valid ancestral order of the nodes in the fused DAG.
-	 * @return
+	 * @return a list of nodes representing an ancestral order of the resulting DAG.
 	 */
     public List<Node> getOrderFusion(){
     	return  this.getFusionDag().paths().getValidOrder(this.getFusionDag().getNodes(),true);
@@ -112,7 +111,7 @@ public class ConsensusBES implements Runnable {
     
 	/**
 	 * Returns the number of edges inserted during the consensus union and removed in the Backward Equivalence Search with D-separation.
-	 * @return
+	 * @return the number of edges inserted during the consensus union and removed in the Backward Equivalence Search with D-separation.
 	 */
 	public int getNumberOfInsertedEdges(){
 		return this.numberOfInsertedEdges;
