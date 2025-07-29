@@ -106,7 +106,7 @@ public final class HierarchicalAgglomerativeClustererBNs {
             clustersIndexes[i][i][0] = true;
         }
         
-        dissimilarityMatrix = computeDissimilarityMatrix();
+        computeDissimilarityMatrix();
        
         for (int a = 1; a<nDags; a++) {
             // Determine the two most similar clusters, i and j (such that i<j)
@@ -273,8 +273,8 @@ public final class HierarchicalAgglomerativeClustererBNs {
 	}
 
 	
-	private PairWiseConsensusBES[][] computeDissimilarityMatrix() {
-        final PairWiseConsensusBES[][] dissimilarityMatrix = new PairWiseConsensusBES[this.getSetOfBNs().size()][this.getSetOfBNs().size()];
+	private void computeDissimilarityMatrix() {
+        this.dissimilarityMatrix = new PairWiseConsensusBES[this.getSetOfBNs().size()][this.getSetOfBNs().size()];
         this.initialpairwisedistance = new PairWiseConsensusBES[this.getSetOfBNs().size()][this.getSetOfBNs().size()];
         // fill diagonal
         for (int o = 0; o<dissimilarityMatrix.length; o++) {
@@ -292,7 +292,6 @@ public final class HierarchicalAgglomerativeClustererBNs {
                 this.initialpairwisedistance[o2][o1] = dissimilarity;
             }
         }
-        return dissimilarityMatrix;
     }
 
     private PairWiseConsensusBES computeDissimilarity(int o1, int o2, int level) {
