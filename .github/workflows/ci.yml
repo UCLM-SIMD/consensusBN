@@ -17,8 +17,8 @@ jobs:
     - name: Set up Java
       uses: actions/setup-java@v4
       with:
-        distribution: 'temurin' # puedes cambiarlo por zulu, adopt, etc.
-        java-version: '17'      # cambia a 11 o el que uses en tu proyecto
+        distribution: 'temurin' 
+        java-version: '17'      
 
     - name: Cache Maven packages
       uses: actions/cache@v4
@@ -28,5 +28,5 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-maven-
 
-    - name: Build and Test with Maven
-      run: mvn clean test
+    - name: Build, Test, and Check Coverage with Maven (80% coverage to pass)
+      run: mvn clean verify

@@ -174,10 +174,13 @@
             </execution>
             <execution>
               <id>report</id>
-              <phase>test</phase>
+              <phase>verify</phase>
               <goals>
                 <goal>report</goal>
               </goals>
+              <configuration>
+                <outputDirectory>${project.build.directory}/jacoco-report</outputDirectory>
+              </configuration>
             </execution>
             <execution>
               <id>check</id>
@@ -192,7 +195,7 @@
                       <limit>
                         <counter>LINE</counter>
                         <value>COVEREDRATIO</value>
-                        <minimum>0.50</minimum>
+                        <minimum>0.80</minimum>
                       </limit>
                     </limits>
                   </rule>
