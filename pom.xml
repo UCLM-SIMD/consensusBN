@@ -120,6 +120,12 @@
               </goals>
             </execution>
           </executions>
+          <configuration>
+            <gpgArguments>
+              <arg>--pinentry-mode</arg>
+              <arg>loopback</arg>
+            </gpgArguments>
+          </configuration>
         </plugin>
     
         <!-- Configure the Maven Source Plugin for source code packaging -->
