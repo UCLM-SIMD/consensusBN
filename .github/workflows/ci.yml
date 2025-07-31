@@ -31,4 +31,4 @@ jobs:
           ${{ runner.os }}-maven-
 
     - name: Build, Test, and Check Coverage with Maven (80% coverage to pass)
-      run: mvn clean verify
+      run: mvn clean verify -Dgpg.passphrase=${{ secrets.GPG_PASSPHRASE }}
