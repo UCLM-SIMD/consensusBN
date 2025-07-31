@@ -3,113 +3,140 @@ package es.uclm.i3a.simd.consensusBN;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-
+import java.util.Set;
 
 import edu.cmu.tetrad.graph.Node;
 
-public class PowerSet implements Enumeration<SubSet> {
+/**
+ * PowerSet generates all subsets of a given set of nodes, with an optional maximum size constraint.
+ * It implements Enumeration to allow iteration over the subsets.
+ */
+public class PowerSet implements Enumeration<Set<Node>> {
+	/**
+	 * List of nodes for which the power set is generated.
+	 */
 	List<Node> nodes;
-	private List<SubSet> subSets;
+	/**
+	 * List to store the generated subsets.
+	 */
+	private final List<Set<Node>> subSets = new ArrayList<>();
+	/**
+	 * Index to track the current position in the enumeration.
+	 */
 	private int index;
-	private int[] lista;
-	private HashMap<Integer,SubSet> hashMap;
-	
-	
-	PowerSet(List<Node> nodes,int k) {
-		if(nodes.size()<=k)
-			k=nodes.size();
-		this.nodes=nodes;
-		subSets = new ArrayList<SubSet>();
-		index=0;
-		hashMap=new HashMap<Integer, SubSet>();
-		lista=ListFabric.getList(nodes.size());
-		for (int i : lista) {
-			SubSet newSubSet = new SubSet();
-			String selection = Integer.toBinaryString(i);
-			for (int j = selection.length() - 1; j >= 0; j--) {
-				if (selection.charAt(j) == '1') {
-					newSubSet.add(nodes.get(selection.length() - j - 1));
-				}
-			}
-			if(newSubSet.size()<=k){
-				subSets.add(newSubSet);
-				hashMap.put(i, newSubSet);
-			}
-		}
-	}
+	/**
+	 * List of integers representing the subsets in binary form.
+	 */
+	private int[] binaryList;
 
+	/**
+	 * A map to store the subsets with their corresponding binary representation.
+	 * The key is the binary representation of the subset, and the value is the subset itself.
+	 */
+	private HashMap<Integer,Set<Node>> subset;
+
+	/**
+	 * Maximum size of the subsets to be generated.
+	 * If set to a value less than the number of nodes, it limits the size of the subsets.
+	 */
+	private int maxPow = 0;
 	
-	PowerSet(List<Node> nodes) {
-		if(nodes.size()>maxPow)
-			maxPow=nodes.size();
-		this.nodes=nodes;
-		subSets = new ArrayList<SubSet>();
-		index=0;
-		hashMap=new HashMap<Integer, SubSet>();
-		lista=ListFabric.getList(nodes.size());
-		for (int i : lista) {
-			SubSet newSubSet = new SubSet();
-			String selection = Integer.toBinaryString(i);
-			for (int j = selection.length() - 1; j >= 0; j--) {
-				if (selection.charAt(j) == '1') {
-					newSubSet.add(nodes.get(selection.length() - j - 1));
-				}
-			}
-			subSets.add(newSubSet);
-			hashMap.put(i, newSubSet);
+	/**
+	 * Builds a PowerSet with subsets of the given nodes, limited to a maximum size.
+	 * @param nodes List of nodes to generate subsets from.
+	 * @param maxSize Maximum size of the subsets to be generated. Assuring that k does not exceed the number of nodes.
+	 * * If maxSize is negative, it will throw an IllegalArgumentException.
+	 * @throws IllegalArgumentException if maxSize is negative.
+	 
+	 */
+    public PowerSet(List<Node> nodes, int maxSize) {
+		if (maxSize < 0) {
+			throw new IllegalArgumentException("maxSize cannot be negative");
 		}
-	}
-    
+        if (maxSize >= nodes.size()) {
+            maxSize = nodes.size();
+        }
+        this.nodes = nodes;
+        initializeSubsets(maxSize);
+    }
+
+    /**
+	 * Builds a PowerSet with all subsets of the given nodes, without size limitation.
+     *
+     * @param nodes Lista de nodos de entrada.
+     */
+    public PowerSet(List<Node> nodes) {
+        if (nodes.size() > maxPow) {
+            maxPow = nodes.size();
+        }
+        this.nodes = nodes;
+        initializeSubsets(nodes.size()); // sin límite: k = nodes.size()
+    }
+
+	/**
+	 * Initializes the subsets based on the nodes and the maximum size.
+	 * This method generates all possible subsets of the nodes, respecting the maximum size constraint.
+	 * @param maxSize Maximum size of the subsets to be generated.
+	 * If maxSize is greater than the number of nodes, it will generate subsets of all sizes.
+	 * If maxSize is 0, it will only generate the empty set.
+	 */
+	private void initializeSubsets(int maxSize) {
+        subset = new HashMap<>();
+        index = 0;
+        binaryList = ListFabric.generateList(nodes.size());
+
+        for (int i : binaryList) {
+            Set<Node> newSubSet = new HashSet<>();
+            String selection = Integer.toBinaryString(i);
+
+            for (int j = selection.length() - 1; j >= 0; j--) {
+                if (selection.charAt(j) == '1') {
+                    int idx = selection.length() - j - 1;
+                    newSubSet.add(nodes.get(idx));
+                }
+            }
+
+            if (newSubSet.size() <= maxSize) {
+                subSets.add(newSubSet);
+                subset.put(i, newSubSet);
+            }
+        }
+    }
+
+	/**
+	 * Checks if there are more subsets to iterate over.
+	 * @return true if there are more subsets, false otherwise.
+	 */
+    @Override
 	public boolean hasMoreElements() {
 		return index<subSets.size();
 	}
 
-	public SubSet nextElement() {
+	/**
+	 * Returns the next subset in the enumeration.
+	 * @return The next subset of the power set of nodes.
+	 */
+	@Override
+	public Set<Node> nextElement() {
 		return subSets.get(index++);
 	}
 	
+	/**
+	 * Resets the index to allow re-iteration over the subsets.
+	 * This method allows the enumeration to start over from the beginning.
+	 */
 	public void resetIndex(){
 		this.index = 0;
 	}
 	
-	private static int maxPow = 0;
-	public static long maxPowerSetSize() {
+	/**
+	 * Returns the maximum size of the power set based on the maximum number of nodes.
+	 * This method calculates the size of the power set as 2 raised to the power of the maximum number of nodes.
+	 * @return The maximum size of the power set.
+	 */
+	public long maxPowerSetSize() {
 		return (long) Math.pow(2,maxPow);
 	}
-	
-//	public void firstTest(boolean result) {
-//		int numInicial=lista[index-1];
-//		for(int i=0;i<lista.length;i++) {
-//			if((lista[i] & numInicial)==numInicial) {
-//				if(result)
-//					hashMap.get(lista[i]).firstTest=SubSet.TEST_TRUE;
-//				else
-//					hashMap.get(lista[i]).firstTest=SubSet.TEST_FALSE;
-//			}
-//		}
-//	}
-//	
-//	public void secondTest(boolean result) {
-//		int numInicial=lista[index-1];
-//		for(int i=0;i<lista.length;i++) {
-//			if((lista[i] & numInicial)==numInicial) {
-//				if(result)
-//					hashMap.get(lista[i]).secondTest=SubSet.TEST_TRUE;
-//				else
-//					hashMap.get(lista[i]).secondTest=SubSet.TEST_FALSE;
-//			}
-//		}
-//	}
-//	
-//	public void reset(boolean isFordwardSearch) {
-//		index=0;
-//		for(int i=0;i<subSets.size();i++) {
-//			SubSet aux=subSets.get(i);
-//			if(isFordwardSearch)
-//				aux.secondTest=SubSet.TEST_NOT_EVALUATED;
-//			else
-//				aux.firstTest=SubSet.TEST_NOT_EVALUATED;
-//		}
-//	}
 }

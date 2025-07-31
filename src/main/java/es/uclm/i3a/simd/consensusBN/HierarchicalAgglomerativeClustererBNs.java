@@ -106,7 +106,7 @@ public final class HierarchicalAgglomerativeClustererBNs {
             clustersIndexes[i][i][0] = true;
         }
         
-        dissimilarityMatrix = computeDissimilarityMatrix();
+        computeDissimilarityMatrix();
        
         for (int a = 1; a<nDags; a++) {
             // Determine the two most similar clusters, i and j (such that i<j)
@@ -179,7 +179,7 @@ public final class HierarchicalAgglomerativeClustererBNs {
     			for(int j = 0; j< this.setOfBNs.size(); j++){
     				for(int k = 0; k< this.setOfBNs.size(); k++){
     					if(this.clustersIndexes[cluster][j][level]&&this.clustersIndexes[cluster][k][level]&&(j!=k)){
-        					distance[j]+=this.initialpairwisedistance[j][k].getHammingDistance();//getNumberOfInsertedEdges();
+        					distance[j]+=this.initialpairwisedistance[j][k].calculateHammingDistance();//getNumberOfInsertedEdges();
     					}
     				}
     				if(clustersIndexes[cluster][j][level]&&distance[j]<bestDistance){
@@ -195,7 +195,7 @@ public final class HierarchicalAgglomerativeClustererBNs {
     		ConsensusBES fus = new ConsensusBES(setOfDags);
     		fus.fusion();
     		this.numberOfInsertedEdges = fus.getNumberOfInsertedEdges();
-    		return fus.getFusion();
+    		return fus.getFusionDag();
     	}else{
     		if(level == this.maxLevel+1){
     			for(int cluster =0 ; cluster < this.setOfBNs.size(); cluster++){
@@ -273,8 +273,8 @@ public final class HierarchicalAgglomerativeClustererBNs {
 	}
 
 	
-	private PairWiseConsensusBES[][] computeDissimilarityMatrix() {
-        final PairWiseConsensusBES[][] dissimilarityMatrix = new PairWiseConsensusBES[this.getSetOfBNs().size()][this.getSetOfBNs().size()];
+	private void computeDissimilarityMatrix() {
+        this.dissimilarityMatrix = new PairWiseConsensusBES[this.getSetOfBNs().size()][this.getSetOfBNs().size()];
         this.initialpairwisedistance = new PairWiseConsensusBES[this.getSetOfBNs().size()][this.getSetOfBNs().size()];
         // fill diagonal
         for (int o = 0; o<dissimilarityMatrix.length; o++) {
@@ -292,7 +292,6 @@ public final class HierarchicalAgglomerativeClustererBNs {
                 this.initialpairwisedistance[o2][o1] = dissimilarity;
             }
         }
-        return dissimilarityMatrix;
     }
 
     private PairWiseConsensusBES computeDissimilarity(int o1, int o2, int level) {
@@ -301,12 +300,12 @@ public final class HierarchicalAgglomerativeClustererBNs {
     	if (this.maxSize > 0 && (this.maxSize >= (this.clusterCardinalities[o1] + this.clusterCardinalities[o2]))|| level == 0){
     		PairWiseConsensusBES pairBNs = new PairWiseConsensusBES(this.clustersBN[o1][level],this.clustersBN[o2][level]);
     		PairWiseConsensusBES pairDag= (PairWiseConsensusBES) pairBNs;
-    		pairDag.getFusion();
+    		pairDag.fusion();
     		return pairBNs;
     	}else if(this.maxSize == 0){
     			PairWiseConsensusBES pairBNs = new PairWiseConsensusBES(this.clustersBN[o1][level],this.clustersBN[o2][level]);
     			PairWiseConsensusBES pairDag= (PairWiseConsensusBES) pairBNs;
-    			pairDag.getFusion();
+    			pairDag.fusion();
     			if((pairDag.getDagFusion().getNumEdges())/this.averageNEdges <= this.maxComplexityCluster|| level == 0)
     				return pairBNs;	
     			else return null;
@@ -326,7 +325,7 @@ public final class HierarchicalAgglomerativeClustererBNs {
                 		PairWiseConsensusBES inCluster = dissimilarityMatrix[cluster][neighbor];
                 		if(inCluster!= null){
                 			double complexity = 0.0;
-                			complexity = (float) inCluster.getHammingDistance();//getNumberOfInsertedEdges();
+                			complexity = (float) inCluster.calculateHammingDistance();//getNumberOfInsertedEdges();
                 			if (indexUsed[neighbor]&&complexity<smallestDissimilarity&&cluster!=neighbor) {
                 				smallestDissimilarity = complexity;
                 				smallnEdgesUnion = (float) inCluster.getNumberOfUnionEdges();

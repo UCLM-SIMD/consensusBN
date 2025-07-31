@@ -1,5 +1,6 @@
 # consensusBN - Bayesian Network Fusion
 
+[![CI](https://github.com/UCLM-SIMD/consensusBN/actions/workflows/ci.yml/badge.svg)](https://github.com/UCLM-SIMD/consensusBN/actions/workflows/ci.yml)
 ![Java](https://img.shields.io/badge/Java-8%2B-blue)
 ![Maven](https://img.shields.io/badge/Maven-3.6%2B-orange)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
@@ -8,7 +9,7 @@
 
 `consensusBN` is a Java-based library for Bayesian Network Fusion. This project allows users to combine multiple Bayesian networks into a single consensus network, leveraging the power of consensus-based modeling techniques. The project is supported by a published paper [(link)](https://www.sciencedirect.com/science/article/abs/pii/S156625352030364X), titled "Efficient and accurate structural fusion of Bayesian networks."
 
-![Bayesian Network Fusion](assets/bn_fusion.png)
+![Bayesian Network Fusion](assets/bn_fusion.jpg)
 
 ## Features
 

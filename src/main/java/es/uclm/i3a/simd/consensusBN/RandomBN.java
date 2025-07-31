@@ -13,6 +13,11 @@ import edu.cmu.tetrad.bayes.*;
 import edu.cmu.tetrad.bayes.MlBayesIm.InitializationMethod;
 import edu.cmu.tetrad.data.*;
 
+/**
+ * RandomBN generates a set of random Bayesian networks (BNs) based on specified parameters. This class has been used for experiments, and is being maintained for compatibility with existing experiments.
+ * Further development should avoid using this class and instead use @see RandomGraph from Tetrad for generating random DAGs.
+ */
+@Deprecated
 public class RandomBN {
 	
 	int seed = 0;

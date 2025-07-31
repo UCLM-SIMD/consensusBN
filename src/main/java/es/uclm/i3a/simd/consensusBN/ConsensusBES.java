@@ -1,468 +1,166 @@
 package es.uclm.i3a.simd.consensusBN;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import edu.cmu.tetrad.graph.Dag;
-import edu.cmu.tetrad.graph.Edge;
-import edu.cmu.tetrad.graph.EdgeListGraph;
-import edu.cmu.tetrad.graph.Edges;
-import edu.cmu.tetrad.graph.Endpoint;
-import edu.cmu.tetrad.graph.Graph;
 import edu.cmu.tetrad.graph.Node;
-import edu.cmu.tetrad.search.utils.MeekRules;
-import edu.cmu.tetrad.search.utils.GraphSearchUtils;
-import static es.uclm.i3a.simd.consensusBN.Utils.pdagToDag;
-//import experimentosFusion.RandomBN;
 
-
-
+/**
+ * This class implements the Optimal Fusion GES^h_d algorithm, which applies a Consensus Union followed by a Backward Equivalence Search (BES) with D-separation.
+ * The algorithm first computes a consensus DAG from a set of input DAGs using the ConsensusUnion class.
+ * After obtaining the consensus DAG, it applies the Backward Equivalence Search with D-separation to refine the graph, achieving the optimal fusion BN.
+ * The resulting output DAG is stored in the outputDag attribute.
+ */
 public class ConsensusBES implements Runnable {
 	
-	ArrayList<Node> alpha = null;
-	Dag outputDag = null;
-	AlphaOrder heuristic = null;
-	TransformDags imaps2alpha = null;
-	ArrayList<Dag> setOfdags = null;
-	ArrayList<Dag> setOfOutDags = null;
-	Dag union = null;
+	/**
+	 * Final output DAG after applying the Consensus Union and Backward Equivalence Search with D-separation.
+	 * This DAG represents the optimal fusion of the input DAGs.
+	 * It is computed by first merging the input DAGs into a consensus DAG and then refining it using the BES with D-separation.
+	 * @see ConsensusUnion
+	 * @see BackwardEquivalenceSearchDSep
+	 */
+	protected Dag outputDag;
+
+	/**
+	 * Instance of ConsensusUnion used to compute the consensus DAG from the input DAGs.
+	 * This instance is initialized with the set of input DAGs and computes the alpha order of nodes using AlphaOrder heuristic (Greedy Heuristic Order).
+	 * 
+	 * @see ConsensusUnion
+	 * @see AlphaOrder
+	 */
+	private final ConsensusUnion consensusUnion;
+
+	/**
+	 * List of input DAGs to be fused using the ConsensusBES algorithm.
+	 */
+	private final ArrayList<Dag> inputDags;
+
+	/**
+	 * List of transformed DAGs after applying the alpha order to the input DAGs.
+	 * @see BetaToAlpha
+	 * @see TransformDags 
+	 */
+	private ArrayList<Dag> transformedDags;
+
+	/**
+	 * Resulting DAG afther applying the Consensus Union algorithm.
+	 * This DAG contains the union of all edges from the transformed input DAGs, ensuring that the resulting graph is acyclic.
+	 * The number of edges inserted during the union process can be retrieved using getNumberOfInsertedEdges.
+	 */
+	private Dag union = null;
+
+	/**
+	 * Number of edges inserted during the consensus union process and the Backward Equivalence Search process.
+	 */
 	int numberOfInsertedEdges = 0;
 	
-	Map<String, Double> localScore = new HashMap<String,Double>();
-	
-	
+
+	/**
+	 * Constructor for ConsensusBES that initializes the union process with a list of DAGs.
+	 * It creates an instance of ConsensusUnion to compute the consensus DAG.
+	 * @param dags the list of input DAGs to be merged.
+	 */
 	public ConsensusBES(ArrayList<Dag> dags){
-		this.setOfdags = dags;
-		this.heuristic = new AlphaOrder(this.setOfdags);
-		
-		this.heuristic.computeAlphaH2();
-		this.alpha = this.heuristic.alpha;
-		this.imaps2alpha = new TransformDags(this.setOfdags,this.alpha);
-	
-		this.imaps2alpha.transform();
-		this.numberOfInsertedEdges = imaps2alpha.getNumberOfInsertedEdges();
-		this.setOfOutDags = imaps2alpha.setOfOutputDags;
+		this.inputDags = dags;
+		this.consensusUnion = new ConsensusUnion(this.inputDags);
 	}
 	
-	
-	public int getNumberOfInsertedEdges(){
-		return this.numberOfInsertedEdges;
+	/**
+	 * Performs the consensus union operation by calling the union method of the ConsensusUnion instance.
+	 * This method initializes the union process, transforming the input DAGs based on the alpha order and merging them into a single consensus DAG.
+	 * After the union, it retrieves the transformed DAGs and updates the number of inserted edges.
+	 */
+	public void consensusUnion(){
+		this.union = this.consensusUnion.union();
+		this.transformedDags = this.consensusUnion.getTransformedDags();
+		this.numberOfInsertedEdges += consensusUnion.getNumberOfInsertedEdges();
 	}
 	
-	private void consensusUnion(){
-		
-		this.union = new Dag(this.alpha);
-		for(Node nodei: this.alpha){
-			for(Dag d : this.imaps2alpha.setOfOutputDags){
-				List<Node>parent = d.getParents(nodei);
-				for(Node pa: parent){
-					if(!this.union.isParentOf(pa, nodei)){
-						this.union.addEdge(new Edge(pa,nodei,Endpoint.TAIL,Endpoint.ARROW));
-					}
-				}
-			}
-			
-		}
-//		for(Edge e: this.union.getEdges()){
-//			for(Dag d : this.imaps2alpha.setOfOutputDags){
-//				if((d.getEdge(e.getNode1(), e.getNode2())==null) && (d.getEdge(e.getNode2(), e.getNode1())==null)) 
-//					this.numberOfInsertedEdges++;
-//				
-//			}
-//		}
-		
-	}
-	
-	// private methods for searching
-	
-
+	/**
+	 * Applies the fusion process by first performing the consensus union and then applying the Backward Equivalence Search with D-separation.
+	 * This method modifies the outputDag attribute to contain the final fused DAG after applying both steps.
+	 */
 	public void fusion(){
-		
-	//	System.out.println("\n** BACKWARD ELIMINATION SEARCH (BES)");
-		//PowerSetFabric.setMode(PowerSetFabric.MODE_BES);
-		double score = 0;
-		double bestScore = score;
-		Graph graph = null;
-		
+		// 1. Apply ConsensusUnion to the set of dags
 		consensusUnion();
-		
-		graph = new EdgeListGraph(new LinkedList<>(this.union.getNodes()));
-		for(Edge e: this.union.getEdges()){
-			graph.addEdge(e);
-		}
-
-		//SearchGraphUtils.dagToPdag(graph);
-		rebuildPattern(graph);
-		Node x, y;
-		Set<Node> t = new HashSet<Node>();
-		do {
-			x = y = null;
-			Set<Edge> edges1 = graph.getEdges();
-			List<Edge> edges = new ArrayList<Edge>();
-
-			for (Edge edge : edges1) {
-				Node _x = edge.getNode1();
-				Node _y = edge.getNode2();
-
-				if (Edges.isUndirectedEdge(edge)) {
-					edges.add(Edges.directedEdge(_x, _y));
-					edges.add(Edges.directedEdge(_y, _x));
-				} else {
-					edges.add(edge);
-				}
-			}
-			for (Edge edge : edges) {
-				
-				Node _x = Edges.getDirectedEdgeTail(edge);
-				Node _y = Edges.getDirectedEdgeHead(edge);
-
-				List<Node> hNeighbors = getHNeighbors(_x, _y, graph);
-//		                List<Set<Node>> hSubsets = powerSet(hNeighbors);
-				PowerSet hSubsets= PowerSetFabric.getPowerSet(_x,_y,hNeighbors);
-
-				while(hSubsets.hasMoreElements()) {
-					SubSet hSubset=hSubsets.nextElement();
-					double deleteEval = deleteEval(_x, _y, hSubset, graph);
-					if (!(deleteEval >= 1.0)) deleteEval = 0.0;
-					double evalScore = score + deleteEval;
-
-                    //System.out.println("Attempt removing " + _x + "-->" + _y + "(" +evalScore + ") "+ hSubset.toString());
-
-					if (!(evalScore > bestScore)) {
-						continue;
-					}
-
-					// INICIO TEST 1
-					List<Node> naYXH = findNaYX(_x, _y, graph);
-					naYXH.removeAll(hSubset);
-					if (!isClique(naYXH, graph)) {
-//		                    	hSubsets.firstTest(true); // Si pasa para H entonces pasa para cualquier H' | H' contiene H
-						continue;
-					}
-					// FIN TEST 1
-
-					bestScore = evalScore;
-					x = _x;
-					y = _y;
-					t = hSubset;
-				}
-
-			}
-			if (x != null) {
-				System.out.println(" ");
-				System.out.println("DELETE " + graph.getEdge(x, y) + t.toString() + " (" +bestScore + ")");
-				System.out.println(" ");
-				delete(x, y, t, graph);
-				rebuildPattern(graph);
-				int deletedEdges = 0;
-				for(int g = 0; g <this.setOfOutDags.size(); g++){
-					if(this.setOfOutDags.get(g).getEdge(x, y) != null || this.setOfOutDags.get(g).getEdge(y, x) != null) deletedEdges++;
-				}
-				this.numberOfInsertedEdges-= deletedEdges;
-//				if(graph.existsDirectedCycle()){
-
-//					System.out.println("Hay un ciclo: "+x.toString()+"  "+y.toString());
-//					System.out.println("Grafo: "+graph.toString());
-//					System.exit(0);
-//				}
-				score = bestScore;
-			}
-		} while (x != null);
-		
-//		System.out.println("Pdag: "+ graph.toString());
-                pdagToDag(graph);
-//		System.out.println("PdagToDag"+graph.toString());
-		this.outputDag = new Dag();
-		for (Node node : graph.getNodes()) this.outputDag.addNode(node);
-		Node nodeT, nodeH;
-		for (Edge e : graph.getEdges()){
-			if(!e.isDirected()) continue;
-			Endpoint endpoint1 = e.getEndpoint1();
-			if (endpoint1.equals(Endpoint.ARROW)){
-				nodeT = e.getNode1(); 
-				nodeH = e.getNode2();
-			}else{
-				nodeT = e.getNode2();
-				nodeH = e.getNode1();
-			}
-			if(!this.outputDag.paths().existsDirectedPath(nodeT, nodeH)) this.outputDag.addEdge(e);
-		}
-//		System.out.println("DAG: "+this.outputDag.toString());
-	}
-
-
-
-    private static void delete(Node x, Node y, Set<Node> subset, Graph graph) {
-        graph.removeEdges(x, y);
-
-        for (Node aSubset : subset) {
-            if (!graph.isParentOf(aSubset, x) && !graph.isParentOf(x, aSubset)) {
-                graph.removeEdge(x, aSubset);
-                graph.addDirectedEdge(x, aSubset);
-            }
-            graph.removeEdge(y, aSubset);
-            graph.addDirectedEdge(y, aSubset);
-        }
-    }
-
-
-    private void rebuildPattern(Graph graph) {
-        GraphSearchUtils.basicCpdag(graph);
-        pdag(graph);
-      }
-
-      /**
-       * Fully direct a graph with background knowledge. I am not sure how to
-       * adapt Chickering's suggested algorithm above (dagToPdag) to incorporate
-       * background knowledge, so I am also implementing this algorithm based on
-       * Meek's 1995 UAI paper. Notice it is the same implemented in PcSearch.
-       * </p> *IMPORTANT!* *It assumes all colliders are oriented, as well as
-       * arrows dictated by time order.*
-       * 
-       * ELIMINADO BACKGROUND KNOWLEDGE
-       */
-      private void pdag(Graph graph) {
-      	MeekRules rules = new MeekRules();
-		rules.setMeekPreventCycles(true);
-		rules.orientImplied(graph);
-      }
-    
-	
-	   private static boolean isClique(List<Node> set, Graph graph) {
-	        List<Node> setv = new LinkedList<Node>(set);
-	        for (int i = 0; i < setv.size() - 1; i++) {
-	            for (int j = i + 1; j < setv.size(); j++) {
-	                if (!graph.isAdjacentTo(setv.get(i), setv.get(j))) {
-	                    return false;
-	                }
-	            }
-	        }
-	        return true;
-	    }
-
-	private static List<Node> getHNeighbors(Node x, Node y, Graph graph) {
-		List<Node> hNeighbors = new LinkedList<Node>(graph.getAdjacentNodes(y));
-		hNeighbors.retainAll(graph.getAdjacentNodes(x));
-
-		for (int i = hNeighbors.size() - 1; i >= 0; i--) {
-			Node z = hNeighbors.get(i);
-			Edge edge = graph.getEdge(y, z);
-			if (!Edges.isUndirectedEdge(edge)) {
-				hNeighbors.remove(z);
-			}
-		}
-
-		return hNeighbors;
+		// 2. Apply Backward Equivalence Search with D-separation
+		BackwardEquivalenceSearchDSep bes = new BackwardEquivalenceSearchDSep(this.union, this.inputDags, this.transformedDags);
+		this.outputDag = bes.applyBackwardEliminationWithDSeparation();
+		// 3. Updating numberOfInsertedEdges
+		this.numberOfInsertedEdges -= bes.getNumberOfRemovedEdges();
 	}
 	
-	
-	double deleteEval(Node x, Node y, SubSet h, Graph graph){
-		
-		 Set<Node> set1 = new HashSet<Node>(findNaYX(x, y, graph));
-	        set1.removeAll(h);
-	        set1.addAll(graph.getParents(y));
-	        set1.remove(x);
-	        return scoreGraphChangeDelete(y, x, set1); // calcular si y esta d-separado de x dado el set1 en cada grafo.
-		
-	}
-	
-	double scoreGraphChangeDelete(Node y, Node x, Set<Node> set){
-		
-		String key = y.getName()+x.getName()+set.toString();
-		Double val = this.localScore.get(key);
-		if(val == null){
-			double eval = 0.0;
-			LinkedList<Node> conditioning = new LinkedList<Node>();
-			conditioning.addAll(set);
-			for(Dag g: this.setOfdags){
-				if(!dSeparated(g,y, x, conditioning)) return 0.0;
-			}
-			eval = 1.0; //eval / (double) this.setOfdags.size();
-			val = eval;
-			this.localScore.put(key, val);
-			return eval;
-		}else{
-			return val.doubleValue();
-		}
-	}
-	
-	
-	boolean dSeparated(Dag g, Node x, Node y, LinkedList<Node> cond){
-		
-		LinkedList<Node> open = new LinkedList<Node>();
-		HashMap<String,Node> close = new HashMap<String,Node>();
-		open.add(x);
-		open.add(y);
-		open.addAll(cond);
-		while (open.size() != 0){
-			Node a = open.getFirst();
-			open.remove(a);
-			close.put(a.toString(),a);
-			List<Node> pa =g.getParents(a);
-			for(Node p : pa){
-				if(close.get(p.toString()) == null){
-					if(!open.contains(p)) open.addLast(p);
-				}
-			}
-		}
-		
-		Graph aux = new EdgeListGraph();
-		
-		for (Node node : g.getNodes()) aux.addNode(node);
-		Node nodeT, nodeH;
-		for (Edge e : g.getEdges()){
-			if(!e.isDirected()) continue;
-			nodeT = e.getNode1();
-			nodeH = e.getNode2();
-			if((close.get(nodeH.toString())!=null)&&(close.get(nodeT.toString())!=null)){
-				Edge newEdge = new Edge(e.getNode1(),e.getNode2(),e.getEndpoint1(),e.getEndpoint2());
-				aux.addEdge(newEdge);
-			}
-		}
-		
-		close = new HashMap<String,Node>();
-		for(Edge e: aux.getEdges()){
-			if(e.isDirected()){
-				Node h;
-				if(e.getEndpoint1()==Endpoint.ARROW){
-					h = e.getNode1();
-				}else h = e.getNode2();
-				if(close.get(h.toString())==null){
-					close.put(h.toString(),h);
-					List<Node> pa = aux.getParents(h);
-					if(pa.size()>1){
-						for(int i = 0 ; i< pa.size() - 1; i++)
-							for(int j = i+1; j < pa.size(); j++){
-								Node p1 = pa.get(i);
-								Node p2 = pa.get(j);
-								boolean found = false;
-								for(Edge edge : aux.getEdges()){
-									if(edge.getNode1().equals(p1)&&(edge.getNode2().equals(p2))){
-										found = true;
-										break;
-									}
-									if(edge.getNode2().equals(p1)&&(edge.getNode1().equals(p2))){
-										found = true;
-										break;
-									}
-								}
-								if(!found) aux.addUndirectedEdge(p1, p2);
-							}
-					}
-					
-				}
-			}
-		}
-		
-		for(Edge e: aux.getEdges()){
-			if(e.isDirected()){
-				e.setEndpoint1(Endpoint.TAIL);
-				e.setEndpoint2(Endpoint.TAIL);
-			}
-		}
-		
-		aux.removeNodes(cond);
-
-		open = new LinkedList<Node>();
-		close = new HashMap<String,Node>();
-		open.add(x);
-		while (open.size() != 0){
-			Node a = open.getFirst();
-			if(a.equals(y)) return false;
-			open.remove(a);
-			close.put(a.toString(),a);
-			List<Node> pa =aux.getAdjacentNodes(a);
-			for(Node p : pa){
-				if(close.get(p.toString()) == null){
-					if(!open.contains(p)) open.addLast(p);
-				}
-			}
-		}
-		
-		return true;
-	}
-	
-	
-	
-
-    private static List<Node> findNaYX(Node x, Node y, Graph graph) {
-        List<Node> naYX = new LinkedList<Node>(graph.getAdjacentNodes(y));
-        naYX.retainAll(graph.getAdjacentNodes(x));
-
-        for (int i = naYX.size()-1; i >= 0; i--) {
-            Node z = naYX.get(i);
-            Edge edge = graph.getEdge(y, z);
-
-            if (!Edges.isUndirectedEdge(edge)) {
-                naYX.remove(z);
-            }
-        }
-
-        return naYX;
-    }
-    
-    public Dag getFusion(){
-    	
+	/**
+	 * Returns the output DAG after applying the Consensus Union and Backward Equivalence Search with D-separation.
+	 * This method retrieves the final fused DAG, which represents the optimal fusion of the input DAGs.
+	 * @return the resulting output DAG after the fusion process.
+	 */
+    public Dag getFusionDag(){
     	return this.outputDag;
     }
     
+	/**
+	 * Returns a valid ancestral order of the nodes in the fused DAG.
+	 * @return a list of nodes representing an ancestral order of the resulting DAG.
+	 */
     public List<Node> getOrderFusion(){
-    	return  this.getFusion().paths().getValidOrder(this.getFusion().getNodes(),true);
+    	return  this.getFusionDag().paths().getValidOrder(this.getFusionDag().getNodes(),true);
     }
     
+	/**
+	 * Returns the number of edges inserted during the consensus union and removed in the Backward Equivalence Search with D-separation.
+	 * @return the number of edges inserted during the consensus union and removed in the Backward Equivalence Search with D-separation.
+	 */
+	public int getNumberOfInsertedEdges(){
+		return this.numberOfInsertedEdges;
+	}
+
+	/**
+	 * Returns the union DAG resulting from the consensus union process.
+	 * @return the union DAG after merging the transformed input DAGs.
+	 */
+	public Dag getUnion() {
+		return this.union;
+	}
+
+	/**
+	 * Returns the ConsensusUnion instance used in this ConsensusBES.
+	 * This instance contains the logic for merging the input DAGs and computing the alpha order.
+	 * @return the ConsensusUnion instance associated with this ConsensusBES.
+	 */
+	public ConsensusUnion getConsensusUnion() {
+		return this.consensusUnion;
+	}
 	
-    public static void main(String args[]) {
-
-
-		System.out.println("Grafos de Partida:   ");
-
-		// (seed, n. variables, n egdes max, n.dags, mutation(n. de operaciones))
-		RandomBN setOfBNs = new RandomBN(0, Integer.parseInt(args[0]), Integer.parseInt(args[1]),
-				Integer.parseInt(args[2]), Integer.parseInt(args[3]));
-		setOfBNs.setMaxInDegree(4);
-		setOfBNs.setMaxOutDegree(4);
-		setOfBNs.generate();
-
-		for (int i = 0; i < setOfBNs.setOfRandomBNs.size(); i++) {
-			System.out.println("red de partida: " + i);
-			System.out.println("---------------------");
-			System.out.println("Grafo: ");
-			System.out.println(setOfBNs.setOfRandomDags.get(i).toString());
-//    		System.out.println("Probabilidades: ");
-//    		System.out.println(setOfBNs.setOfRandomBNs.get(i).toString());
-//    		System.out.println("_____________________");
-//    		System.out.println("Datos Simulados");
-//    		System.out.println(setOfBNs.setOfSampledBNs.get(i).toString());
-
-//
-//    	}
-//    	//
-    	ConsensusBES conDag= null;
-//
-    	conDag = new ConsensusBES(setOfBNs.setOfRandomDags);
-    	conDag.fusion();
-    	Dag g = conDag.getFusion();
-    	System.out.println("grafo consenso: "+ g +"  Complejidad de la Fusion: "+ conDag.getNumberOfInsertedEdges()
-    	+ "  "+ conDag.union.getNumEdges());
-    	System.out.println("Orden Inicial Heu: "+conDag.alpha.toString());
-    	System.out.println("Orden de consenso: "+conDag.getOrderFusion().toString());
-//
-////		HierarchicalAgglomerativeClustererBNs Cfusion = new HierarchicalAgglomerativeClustererBNs(setOfBNs.setOfRandomDags,0.50);
-////		int l = Cfusion.cluster();
-////		System.out.println("Nivel de Fusion: "+l);
-////		System.out.println(Cfusion.computeConsensusDag(l).toString());
-//    }
-//
+	/**
+	 * Returns the list of transformed DAGs after applying the alpha order to the input DAGs.
+	 * This method retrieves the transformed DAGs that were used in the consensus union process.
+	 * @return the list of transformed DAGs.
+	 */
+	public ArrayList<Dag> getTransformedDags() {
+		if (this.transformedDags != null) {
+			return this.transformedDags;
+		} else {
+			throw new IllegalStateException("Transformed DAGs have not been initialized. Please call fusion() first.");
 		}
 	}
 
+	/**
+	 * Returns the list of input DAGs used in this ConsensusBES.
+	 * This method retrieves the original DAGs that were provided to the ConsensusBES constructor.
+	 * @return the list of input DAGs.
+	 */
+	public ArrayList<Dag> getInputDags() {
+		return this.inputDags;
+	}
+	
+	/**
+	 * Runs the ConsensusBES algorithm in a thread, performing the consensus union and the Backward Equivalence Search with D-separation.
+	 */
 	@Override
 	public void run() {
-
+		this.fusion();
 	}
 }

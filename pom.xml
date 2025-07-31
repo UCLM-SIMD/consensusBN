@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <!--Project Information-->
-  <groupId>org.albacete.simd</groupId>
+  <groupId>io.github.jlaborda</groupId>
   <artifactId>consensusBN</artifactId>
   <version>1.0.0</version>
   <packaging>jar</packaging>
@@ -55,12 +55,12 @@
 
   <dependencies>
     <!-- Tetrad Library -->
-      <dependency>
-          <groupId>io.github.cmu-phil</groupId>
-          <artifactId>tetrad-lib</artifactId>
-          <!--<version>7.1.2-2</version>-->
-          <version>7.6.4</version>
-      </dependency>
+    <dependency>
+        <groupId>io.github.cmu-phil</groupId>
+        <artifactId>tetrad-lib</artifactId>
+        <!--<version>7.1.2-2</version>-->
+        <version>7.6.4</version>
+    </dependency>
 
     <!--<dependency>
       <groupId>io.github.cmu-phil</groupId>
@@ -68,6 +68,20 @@
       <version>7.1.2-2</version>
     </dependency>
     -->
+     <!-- JUnit 5 (Jupiter) API and engine -->
+    <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter</artifactId>
+        <version>5.10.0</version>
+        <scope>test</scope>
+    </dependency>
+    <!-- Apache Commons Math3 -->
+     <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-math3</artifactId>
+        <version>3.6.1</version>
+      </dependency>
+
   </dependencies>
 
   <build>
@@ -92,17 +106,38 @@
           </configuration>
         </plugin>
 
+        <!--Maven-GPG-Plugin for signing artifacts-->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-gpg-plugin</artifactId>
+          <version>3.1.0</version>
+          <executions>
+            <execution>
+              <id>sign-artifacts</id>
+              <phase>verify</phase>
+              <goals>
+                <goal>sign</goal>
+              </goals>
+            </execution>
+          </executions>
+          <configuration>
+            <gpgArguments>
+              <arg>--pinentry-mode</arg>
+              <arg>loopback</arg>
+            </gpgArguments>
+          </configuration>
+        </plugin>
+    
         <!-- Configure the Maven Source Plugin for source code packaging -->
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-source-plugin</artifactId>
-          <version>3.3.0</version>
+          <version>3.2.1</version>
           <executions>
             <execution>
               <id>attach-sources</id>
-              <phase>verify</phase>
               <goals>
-                <goal>jar-no-fork</goal>
+                <goal>jar</goal>
               </goals>
             </execution>
           </executions>
@@ -112,7 +147,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>3.2.0</version>
+          <version>3.3.1</version>
           <executions>
             <execution>
               <id>attach-javadocs</id>
@@ -123,23 +158,99 @@
           </executions>
         </plugin>
 
+        <!-- Configure the Maven Surefire Plugin for running tests -->
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>2.22.2</version>
+          <version>3.1.2</version>
+          <dependencies>
+            <dependency>
+              <groupId>org.junit.platform</groupId>
+              <artifactId>junit-platform-engine</artifactId>
+              <version>1.10.0</version>
+            </dependency>
+            <dependency>
+              <groupId>org.junit.jupiter</groupId>
+              <artifactId>junit-jupiter-engine</artifactId>
+              <version>5.10.0</version>
+            </dependency>
+          </dependencies>
+        </plugin>
+
+        <!--JaCoCo for checking coberture-->
+        <plugin>
+          <groupId>org.jacoco</groupId>
+          <artifactId>jacoco-maven-plugin</artifactId>
+          <version>0.8.10</version>
+          <configuration>
+            <excludes>
+              <exclude>**/RandomBN.class</exclude>
+            </excludes>
+          </configuration>
+          <executions>
+            <execution>
+              <goals>
+                <goal>prepare-agent</goal>
+              </goals>
+            </execution>
+            <execution>
+              <id>report</id>
+              <phase>verify</phase>
+              <goals>
+                <goal>report</goal>
+              </goals>
+              <configuration>
+                <outputDirectory>${project.build.directory}/jacoco-report</outputDirectory>
+              </configuration>
+            </execution>
+            <execution>
+              <id>check</id>
+              <goals>
+                <goal>check</goal>
+              </goals>
+              <configuration>
+                <rules>
+                  <rule>
+                    <element>PACKAGE</element>
+                    <limits>
+                      <limit>
+                        <counter>LINE</counter>
+                        <value>COVEREDRATIO</value>
+                        <minimum>0.80</minimum>
+                      </limit>
+                    </limits>
+                  </rule>
+                </rules>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+
+        <!--Maven Central Repository Publishing Plugin-->
+        <!--This looks for user token and pwd in settings.xml-->
+        <plugin>
+          <groupId>org.sonatype.central</groupId>
+          <artifactId>central-publishing-maven-plugin</artifactId>
+          <version>0.8.0</version>
+          <extensions>true</extensions>
+          <configuration>
+            <publishingServerId>central</publishingServerId>
+            <autoPublish>true</autoPublish>
+          </configuration>
         </plugin>
 
       </plugins>
   </build>
 
   <!-- Define the distribution management (for deployment) -->
+   <!--
   <distributionManagement>
     <repository>
       <id>sonatype-nexus-staging</id>
       <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
     </repository>
   </distributionManagement>
-
+  -->
 
 
 </project>
