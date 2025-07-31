@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <!--Project Information-->
-  <groupId>org.albacete.simd</groupId>
+  <groupId>io.github.jlaborda</groupId>
   <artifactId>consensusBN</artifactId>
   <version>1.0.0</version>
   <packaging>jar</packaging>
@@ -106,17 +106,32 @@
           </configuration>
         </plugin>
 
+        <!--Maven-GPG-Plugin for signing artifacts-->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-gpg-plugin</artifactId>
+          <version>3.1.0</version>
+          <executions>
+            <execution>
+              <id>sign-artifacts</id>
+              <phase>verify</phase>
+              <goals>
+                <goal>sign</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+    
         <!-- Configure the Maven Source Plugin for source code packaging -->
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-source-plugin</artifactId>
-          <version>3.3.0</version>
+          <version>3.2.1</version>
           <executions>
             <execution>
               <id>attach-sources</id>
-              <phase>verify</phase>
               <goals>
-                <goal>jar-no-fork</goal>
+                <goal>jar</goal>
               </goals>
             </execution>
           </executions>
@@ -126,7 +141,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>3.2.0</version>
+          <version>3.3.1</version>
           <executions>
             <execution>
               <id>attach-javadocs</id>
@@ -205,17 +220,31 @@
           </executions>
         </plugin>
 
+        <!--Maven Central Repository Publishing Plugin-->
+        <!--This looks for user token and pwd in settings.xml-->
+        <plugin>
+          <groupId>org.sonatype.central</groupId>
+          <artifactId>central-publishing-maven-plugin</artifactId>
+          <version>0.8.0</version>
+          <extensions>true</extensions>
+          <configuration>
+            <publishingServerId>central</publishingServerId>
+            <autoPublish>true</autoPublish>
+          </configuration>
+        </plugin>
+
       </plugins>
   </build>
 
   <!-- Define the distribution management (for deployment) -->
+   <!--
   <distributionManagement>
     <repository>
       <id>sonatype-nexus-staging</id>
       <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
     </repository>
   </distributionManagement>
-
+  -->
 
 
 </project>
