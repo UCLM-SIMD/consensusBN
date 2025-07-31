@@ -1,7 +1,7 @@
 # consensusBN - Bayesian Network Fusion Library
 
 [![CI](https://github.com/UCLM-SIMD/consensusBN/actions/workflows/ci.yml/badge.svg)](https://github.com/UCLM-SIMD/consensusBN/actions/workflows/ci.yml)
-![Java](https://img.shields.io/badge/Java-8%2B-blue)
+![Java](https://img.shields.io/badge/Java-17%2B-blue)
 ![Maven](https://img.shields.io/badge/Maven-3.6%2B-orange)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
