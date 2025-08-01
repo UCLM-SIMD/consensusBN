@@ -7,7 +7,7 @@
   <!--Project Information-->
   <groupId>io.github.jlaborda</groupId>
   <artifactId>consensusBN</artifactId>
-  <version>1.0.0</version>
+  <version>1.0.1</version>
   <packaging>jar</packaging>
   <name>consensusBN</name>
   <url>https://simd.i3a.uclm.es/</url>

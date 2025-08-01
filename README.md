@@ -28,12 +28,12 @@
 - Maven 3.6 or higher
 
 ### Installation
-You can include `consensusBN` to your Maven project by adding the following dependency:
+You can include `consensusBN` to your Maven project by adding the following dependency to your `pom.xml`:
 ```xml
 <dependency>
     <groupId>io.github.jlaborda</groupId>
     <artifactId>consensusBN</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
 </dependency>
 ```
 
