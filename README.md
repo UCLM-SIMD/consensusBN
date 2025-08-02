@@ -75,9 +75,9 @@ public class MyBNFusionApp {
 
 Documentation will be available soon in the [Documentation](docs/) directory.
 Stay tuned for:
-    * API reference
-    * Use-case examples
-    * Integration tips
+- API reference
+- Use-case examples
+- Integration tips
 
 ## 🤝 Contributing
 
