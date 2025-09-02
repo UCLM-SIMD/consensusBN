@@ -20,6 +20,7 @@ public class PowerSetTest {
 
     @BeforeEach
     public void setUp() {
+        ListFabric.MAX_SIZE = Integer.MAX_VALUE; // Reset MAX_SIZE before each test
         nodeList = new ArrayList<>();
         nodeList.add(new GraphNode("X"));
         nodeList.add(new GraphNode("Y"));
@@ -56,15 +57,14 @@ public class PowerSetTest {
         while (ps.hasMoreElements()) {
             result.add(ps.nextElement());
         }
-
-        // Número de subconjuntos debería ser 2^n
-        assertEquals(7, result.size());
-
-        // El conjunto vacío debería estar incluido
-        assertTrue(result.contains(new HashSet<Node>()));
-
-        // El conjunto completo no está incluido en el resultado
-        assertTrue(!result.contains(new HashSet<>(nodeList)));
+        // Number of subsets should be 2^n.
+        assertEquals(8, result.size());
+        
+        // Empty set is included in the result
+        assertTrue(result.stream().anyMatch(Set::isEmpty));
+        
+        // Full set is included in the result
+        assertTrue(result.contains(new HashSet<>(nodeList)));
     }
 
     @Test

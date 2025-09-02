@@ -120,7 +120,9 @@ public class PowerSet implements Enumeration<Set<Node>> {
 	 */
 	@Override
 	public Set<Node> nextElement() {
-		return subSets.get(index++);
+		Set<Node> result = subSets.get(index);
+		index++;
+		return result;
 	}
 	
 	/**
@@ -139,4 +141,10 @@ public class PowerSet implements Enumeration<Set<Node>> {
 	public long maxPowerSetSize() {
 		return (long) Math.pow(2,maxPow);
 	}
+
+	public int[] getBinaryList() {
+		return binaryList;
+	}
+
+	
 }
