@@ -33,7 +33,7 @@ You can include `consensusBN` to your Maven project by adding the following depe
 <dependency>
     <groupId>io.github.jlaborda</groupId>
     <artifactId>consensusBN</artifactId>
-    <version>1.0.1</version>
+    <version>v1.0.1</version>
 </dependency>
 ```
 
