@@ -83,6 +83,25 @@ Stay tuned for:
 
 We welcome contributions! If you'd like to contribute to `consensusBN`, please follow our [Contribution Guidelines](CONTRIBUTING.md).
 
+## 📖 How to Cite
+If you use `consensusBN` in your research, please cite our [publication](https://www.sciencedirect.com/science/article/pii/S156625352030364X):
+
+```
+@article{PUERTA2021155,
+title = {Efficient and accurate structural fusion of Bayesian networks},
+journal = {Information Fusion},
+volume = {66},
+pages = {155-169},
+year = {2021},
+issn = {1566-2535},
+doi = {https://doi.org/10.1016/j.inffus.2020.09.003},
+url = {https://www.sciencedirect.com/science/article/pii/S156625352030364X},
+author = {José M. Puerta and Juan A. Aledo and José A. Gámez and Jorge D. Laborda},
+keywords = {Bayesian networks, Aggregation, Fusion, Consensus, Heuristic orders}
+}
+```
+
+
 ## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
